@@ -1,0 +1,4 @@
+interface:
+  display_name: "PyWord"
+  short_description: "基于现有 Python 脚本体系的 Word 自动化开发与复用助手"
+  default_prompt: "Use $pyword to inspect the bundled docs/ and scripts/ before solving a Python Word automation task."

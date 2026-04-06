@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PyWord 使用手册</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.8;
+            color: #333;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            background: #f5f7fa;
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            font-size: 28px;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #3498db;
+        }
+        h2 {
+            color: #2c3e50;
+            font-size: 22px;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            padding-left: 15px;
+            border-left: 4px solid #3498db;
+        }
+        h3 {
+            color: #34495e;
+            font-size: 18px;
+            margin-top: 30px;
+            margin-bottom: 15px;
+        }
+        p {
+            margin: 12px 0;
+            text-align: justify;
+        }
+        ul, ol {
+            margin: 12px 0;
+            padding-left: 30px;
+        }
+        li {
+            margin: 6px 0;
+        }
+        .section {
+            background: #fff;
+            padding: 25px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .prompt-box {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-left: 4px solid #3498db;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        .prompt-box p {
+            margin: 10px 0;
+        }
+        .prompt-box ul {
+            margin: 10px 0;
+        }
+        .prompt-box li {
+            font-size: 14px;
+            color: #555;
+        }
+        .copy-btn {
+            display: block;
+            width: fit-content;
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            font-size: 14px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 15px;
+        }
+        .copy-btn:hover {
+            background: #2980b9;
+            transform: translateY(-1px);
+        }
+        .copy-btn.copied {
+            background: #27ae60;
+        }
+        .task-title {
+            font-weight: bold;
+            color: #2c3e50;
+            font-size: 16px;
+            display: block;
+            margin-bottom: 10px;
+        }
+        .section-divider {
+            border: none;
+            border-top: 1px dashed #ddd;
+            margin: 20px 0;
+        }
+        .toc {
+            background: #fff;
+            padding: 20px;
+            margin-bottom: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .toc h3 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: #2c3e50;
+        }
+        .toc ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .toc li {
+            margin: 8px 0;
+        }
+        .toc a {
+            color: #3498db;
+            text-decoration: none;
+            font-size: 15px;
+        }
+        .toc a:hover {
+            text-decoration: underline;
+            color: #2980b9;
+        }
+        .toc .sub {
+            padding-left: 20px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <h1>PyWord 使用手册</h1>
+
+    <div class="toc">
+        <h3>目录</h3>
+        <ul>
+            <li><a href="#section1">一、安装 skills 提示词</a></li>
+            <li><a href="#section2">二、基础排版功能测试</a>
+                <ul class="sub">
+                    <li><a href="#section2-1">2.1 新建文档</a></li>
+                    <li><a href="#section2-2">2.2 多级标题</a></li>
+                    <li><a href="#section2-3">2.3 正文段落</a></li>
+                    <li><a href="#section2-4">2.4 表格插入</a></li>
+                    <li><a href="#section2-5">2.5 公式插入</a></li>
+                    <li><a href="#section2-6">2.6 有序无序列表</a></li>
+                    <li><a href="#section2-7">2.7 插入图片</a></li>
+                </ul>
+            </li>
+            <li><a href="#section3">三、格式控制排版</a></li>
+            <li><a href="#section4">四、页边距、页眉页脚</a></li>
+            <li><a href="#section5">五、目录设置</a>
+                <ul class="sub">
+                    <li><a href="#section5-1">5.1 中文目录</a></li>
+                    <li><a href="#section5-2">5.2 图目录</a></li>
+                    <li><a href="#section5-3">5.3 表目录</a></li>
+                </ul>
+            </li>
+            <li><a href="#section6">六、参考文献</a></li>
+            <li><a href="#section7">七、批注添加与提取</a>
+                <ul class="sub">
+                    <li><a href="#section7-1">7.1 插入批注</a></li>
+                    <li><a href="#section7-2">7.2 提取批注</a></li>
+                </ul>
+            </li>
+        </ul>
+    </div>
+
+    <div class="section" id="section1">
+        <h2>一、安装 skills 提示词</h2>
+        <div class="prompt-box">
+            <span class="task-title">提示词：</span>
+            <p>请在项目文件夹下创建 .claude/skills 文件夹路径，然后将 pyword 文件夹移动到 skills 目录下，并确保 PyWord 技能可在当前项目中正常调用。</p>
+            <button class="copy-btn" onclick="copyPrompt(this)">复制</button>
+        </div>
+    </div>
+
+    <div class="section" id="section2">
+        <h2>二、基础排版功能测试</h2>
+
+        <h3 id="section2-1">2.1 新建文档</h3>
+        <div class="prompt-box">
+            <span class="task-title">提示词：</span>
+            <p>请使用 PyWord 技能，新建一个 Word 文档，文档名称设为《高校毕业设计论文排版测试文档》，并将文档保存到当前项目目录中，页面设置为 A4 纸。</p>
+            <button class="copy-btn" onclick="copyPrompt(this)">复制</button>
+        </div>
+
+        <h3 id="section2-2">2.2 多级标题</h3>
+        <div class="prompt-box">
+            <span class="task-title">提示词：</span>
+            <p>请使用 PyWord 技能，在毕业设计论文测试文档中插入多级标题，标题层级至少包括：</p>
+            <ul>
+                <li>论文题目</li>
+                <li>摘要</li>
+                <li>第一章 绪论</li>
+                <li>1.1 研究背景</li>
+                <li>1.1.1 国内外研究现状</li>
+                <li>第二章 系统设计</li>
+                <li>2.1 系统总体架构</li>
+                <li>2.1.1 功能模块划分</li>
+            </ul>
+            <p>要求测试标题层级是否正确、结构是否清晰、编号是否规范。</p>
+            <p>样式控制如下：</p>
+            <ul>
+                <li>论文题目单独居中显示，突出主标题效果；</li>
+                <li>一级标题采用"第1章、第2章"形式或"1、2"形式，保持统一；</li>
+                <li>二级标题采用"1.1、1.2"形式；</li>
+                <li>三级标题采用"1.1.1、1.1.2"形式；</li>
+                <li>各级标题字体、字号、加粗方式应体现明显层级差异；</li>
+                <li>各级标题上下间距协调统一；</li>
+                <li>标题与正文之间留有合适间距；</li>
+                <li>字体和标号都是黑色</li>
+            </ul>
+            <button class="copy-btn" onclick="copyPrompt(this)">复制</button>
+        </div>
+
+        <h3 id="section2-3">2.3 正文段落</h3>
+        <div class="prompt-box">
+            <span class="task-title">提示词：</span>
+            <p>请使用 PyWord 技能，在毕业设计论文测试文档的摘要、绪论、系统设计等标题下插入若干正文段落。</p>
+            <p>正文内容可围绕"基于人工智能的 Word 自动排版系统设计"展开，每个小节下插入 1 至 3 段连续正文，用于测试正文段落的生成与排版效果。</p>
+            <p>样式控制如下：</p>
+            <ul>
+                <li>正文采用中文论文常见字体与字号；</li>
+                <li>每段首行缩进 2 个字符；</li>
+                <li>行距统一，段前段后间距协调；</li>
+                <li>正文两端对齐，保持整体整洁；</li>
+                <li>段落之间逻辑清晰，语气符合毕业设计论文写作风格；</li>
+            </ul>
+            <button class="copy-btn" onclick="copyPrompt(this)">复制</button>
+        </div>
+
+        <h3 id="section2-4">2.4 表格插入</h3>
+        <div class="prompt-box">
+            <span class="task-title">提示词：</span>
+            <p>请使用 PyWord 技能，在毕业设计论文测试文档中插入一张与论文主题相关的表格，表格名称可设为"表 2-1 系统功能测试结果"。</p>
+            <p>表格需包含：</p>
+            <ul>
+                <li>表题</li>
+                <li>表头</li>
+                <li>至少 4 行测试数据</li>
+                <li>至少 3 列字段</li>
+            </ul>
+            <p>用于测试 Word 表格创建与排版能力。</p>
+            <p>样式控制：</p>
+            <ul>
+                <li>表格整体居中或与正文版心对齐；</li>
+                <li>表题位于表格上方；</li>
+                <li>表头文字突出显示；</li>
+                <li>单元格内容居中或按字段类型合理对齐；</li>
+                <li>行高、列宽协调一致；</li>
+            </ul>
+            <p>三线表设置</p>
+            <ul>
+                <li>仅保留顶线、表头下横线和底线；</li>
+                <li>不使用过多竖线；</li>
+                <li>表头加粗或突出显示；</li>
+            </ul>
+            <button class="copy-btn" onclick="copyPrompt(this)">复制</button>
+        </div>
+
+        <h3 id="section2-5">2.5 公式插入</h3>
+        <div class="prompt-box">
+            <span class="task-title">提示词：</span>
+            <p>请使用 PyWord 技能，在毕业设计论文测试文档中插入 2 至 3 个常见论文公式，</p>
+            <p>用于测试公式对象插入与排版能力。公式示例可包括：</p>
+            <ul>
+                <li>均值公式</li>
+                <li>均方误差公式</li>
+                <li>线性回归表达式</li>
+            </ul>
+            <p>样式控制：</p>
+            <ul>
+                <li>公式单独成行显示；</li>
+                <li>公式居中排列；</li>
+                <li>公式与上下正文之间留出适当间距；</li>
+                <li>公式编号置于右侧；</li>
+                <li>编号格式统一，例如"(2-1)""(2-2)"；</li>
+                <li>公式与编号在视觉上对应清晰；</li>
+                <li>上下公式之间间距一致；</li>
+                <li>公式下方可根据需要插入变量说明段落。</li>
+            </ul>
+            <button class="copy-btn" onclick="copyPrompt(this)">复制</button>
+        </div>
+
+        <h3 id="section2-6">2.6 有序无序列表</h3>
+
+        <h4>有序列表</h4>
+        <div class="prompt-box">
+            <span class="task-title">提示词：</span>
+            <p>请使用 PyWord 技能，在毕业设计论文测试文档中插入一组与论文主题相关的有序列表，</p>
+            <p>列表内容可设为"系统设计步骤""实验实施流程"或"论文研究内容安排"。</p>
+            <p>有序列表需包含：</p>
+            <ul>
+                <li>列表标题或引导语</li>
+                <li>至少 4 条列表项</li>
+                <li>列表项内容具有先后顺序或层次逻辑</li>
+                <li>可包含一级列表与二级子列表</li>
+            </ul>
+            <p>用于测试 Word 有序列表创建与排版能力。</p>
+            <p>样式控制：</p>
+            <ul>
+                <li>有序列表整体与正文版心对齐；</li>
+                <li>列表前可插入引导句，与正文衔接自然；</li>
+                <li>编号格式统一，如"1.""2.""3."；</li>
+                <li>同级列表缩进一致；</li>
+                <li>列表项文字与正文风格协调；</li>
+                <li>列表项之间间距适中，整体清晰整齐；</li>
+                <li>多级列表层次分明，编号规则统一；</li>
+                <li>列表与上下正文之间保留合适间距。</li>
+            </ul>
+            <p>多级有序列表设置：</p>
+            <ul>
+                <li>一级列表使用阿拉伯数字编号；</li>
+                <li>二级列表可使用"(1)""(2)"或"1.1""1.2"形式；</li>
+                <li>不同层级之间缩进明显区分；</li>
+                <li>同一层级编号连续且格式一致；</li>
+                <li>列表层次清楚，不得出现混乱编号；</li>
+                <li>整体风格符合高校毕业设计论文写作习惯。</li>
+            </ul>
+            <button class="copy-btn" onclick="copyPrompt(this)">复制</button>
+        </div>
+
+        <h4>无序列表</h4>
+        <div class="prompt-box">
+            <span class="task-title">提示词：</span>
+            <p>请使用 PyWord 技能，在毕业设计论文测试文档中插入一组与论文主题相关的无序列表，</p>
+            <p>列表内容可设为"系统主要功能""研究创新点"或"实验环境配置"。</p>
+            <p>无序列表需包含：</p>
+            <ul>
+                <li>列表标题或引导语</li>
+                <li>至少 4 条列表项</li>
+                <li>列表项之间为并列关系</li>
+                <li>可包含一级列表与二级子列表</li>
+            </ul>
+            <p>用于测试 Word 无序列表创建与排版能力。</p>
+            <p>样式控制：</p>
+            <ul>
+                <li>无序列表整体与正文版心对齐；</li>
+                <li>列表前可插入引导句，使上下文衔接自然；</li>
+                <li>项目符号样式统一；</li>
+                <li>同级列表缩进一致；</li>
+                <li>列表项文字格式与正文保持协调；</li>
+                <li>列表项之间间距适中，整体排列整齐；</li>
+                <li>多级无序列表层次清晰；</li>
+                <li>列表与上下正文之间保留合适留白。</li>
+            </ul>
+            <p>无序列表样式设置：</p>
+            <ul>
+                <li>一级列表使用统一项目符号；</li>
+                <li>二级列表可使用不同样式的项目符号以区分层级；</li>
+                <li>不同层级之间缩进明显；</li>
+                <li>同一层级符号样式保持一致；</li>
+                <li>列表整体简洁规范，不使用过于花哨的符号；</li>
+                <li>整体风格符合高校毕业设计论文排版习惯。</li>
+            </ul>
+            <button class="copy-btn" onclick="copyPrompt(this)">复制</button>
+        </div>
+
+        <h3 id="section2-7">2.7 插入图片</h3>
+        <div class="prompt-box">
+            <span class="task-title">提示词：</span>
+            <p>请使用 PyWord 技能，在毕业设计论文测试文档中插入一张与论文主题相关的图片，图片内容可设为"系统总体架构图""功能流程图"或"实验结果示意图"。</p>
+            <p>图片插入需包含：</p>
+            <ul>
+                <li>图片本体</li>
+                <li>图片题注</li>
+                <li>图片与正文之间的合理衔接</li>
+            </ul>
+            <p>用于测试 Word 图片插入与排版能力。</p>
+            <p>样式控制：</p>
+            <ul>
+                <li>图片采用嵌入式方式插入，不得使用浮动环绕；</li>
+                <li>图片整体居中显示；</li>
+                <li>图片所在段落设置为单倍行距；</li>
+                <li>图片与上下正文之间保留合适间距；</li>
+                <li>图片大小适中，不得超出版心范围；</li>
+                <li>图片位置稳定，不影响正文正常排版；</li>
+                <li>图片题注位于图片下方；</li>
+                <li>题注与图片整体风格符合高校毕业设计论文排版习惯</li>
+            </ul>
+            <button class="copy-btn" onclick="copyPrompt(this)">复制</button>
+        </div>
+    </div>
+
+    <div class="section" id="section3">
+        <h2>三、格式控制排版</h2>
+        <div class="prompt-box">
+            <span class="task-title">提示词：</span>
+            <p>请使用 PyWord 技能，在高校毕业设计论文测试文档中，对一级标题、二级标题、三级标题、正文段落、表格标题、表格表头、表格内容统一进行格式控制测试，并同时设置中文字体和英文字体。</p>
+            <p>具体要求如下：</p>
+            <ul>
+                <li>一级标题：中文字体黑体，英文字体 Times New Roman，三号，加粗，居中，段前 24 磅，段后 18 磅，单倍行距。</li>
+                <li>二级标题：中文字体黑体，英文字体 Times New Roman，小三，加粗，左对齐，段前 18 磅，段后 12 磅，固定值 24 磅。</li>
+                <li>三级标题：中文字体黑体，英文字体 Times New Roman，四号，加粗，左对齐，段前 12 磅，段后 6 磅，1.5 倍行距。</li>
+                <li>正文段落：中文字体宋体，英文字体 Times New Roman，小四，两端对齐，首行缩进 2 字符，段前 0 磅，段后 0 磅，1.5 倍行距。</li>
+                <li>表格标题：中文字体宋体，英文字体 Times New Roman，五号，加粗，居中，段前 6 磅，段后 6 磅，单倍行距。</li>
+                <li>表格表头：中文字体宋体，英文字体 Times New Roman，五号，加粗，水平垂直居中，段前 0 磅，段后 0 磅，单倍行距。</li>
+                <li>表格内容：中文字体宋体，英文字体 Times New Roman，五号，水平垂直居中，段前 0 磅，段后 0 磅，单倍行距。</li>
+            </ul>
+            <p>要求所有中文使用指定中文字体，所有英文、数字、字母使用 Times New Roman，并确保样式真实写入 Word 文档。</p>
+            <button class="copy-btn" onclick="copyPrompt(this)">复制</button>
+        </div>
+    </div>
+
+    <div class="section" id="section4">
+        <h2>四、页边距、页眉页脚</h2>
+        <div class="prompt-box">
+            <span class="task-title">提示词：</span>
+            <p>请使用 PyWord 技能，在高校硕士/本科毕业论文测试文档中，对页边距、分节、奇偶页页眉页脚、页码格式进行格式控制测试，整体风格参考中国高校毕业论文常见排版要求。</p>
+            <p>具体要求如下：</p>
+            <p>页面与页边距设置</p>
+            <ul>
+                <li>纸张大小设置为 A4。</li>
+                <li>页边距设置为：上 3.0 cm，下 2.5 cm，左 3.0 cm，右 2.5 cm。</li>
+                <li>装订线位置设置为：左侧。</li>
+                <li>装订线宽度设置为：0 cm。</li>
+                <li>页眉距边界设置为：1.5 cm。</li>
+                <li>页脚距边界设置为：1.75 cm。</li>
+            </ul>
+            <p>文档分节设置</p>
+            <ul>
+                <li>文档至少划分为以下几个部分：
+                    <ol>
+                        <li>封面</li>
+                        <li>摘要</li>
+                        <li>目录</li>
+                        <li>正文</li>
+                        <li>参考文献</li>
+                        <li>致谢</li>
+                    </ol>
+                </li>
+                <li>各主要部分之间使用分节符（下一页）分隔，不使用普通分页符代替。</li>
+                <li>各节页眉页脚需支持单独设置。</li>
+                <li>从正文开始，章节之间应支持根据章标题更新页眉内容。</li>
+                <li>如需实现不同章节不同页眉内容，应取消对应节的"链接到前一节"。</li>
+            </ul>
+            <p>页眉设置</p>
+            <ul>
+                <li>启用 "奇偶页不同"。</li>
+                <li>封面不设置页眉。</li>
+                <li>摘要、目录、正文、参考文献、致谢部分均设置页眉。</li>
+                <li>页眉字体：中文 宋体五号，英文和数字 Times New Roman 五号。</li>
+                <li>页眉段落：居中对齐。</li>
+                <li>页眉下方添加一条横线，线宽可设为 0.75 磅。</li>
+            </ul>
+            <p>页眉内容要求：</p>
+            <ul>
+                <li>偶数页页眉：统一显示学校或论文类别信息，例如："XX大学硕士学位论文" 或 "XX大学本科毕业论文（设计）"。</li>
+                <li>奇数页页眉：显示当前部分名称或当前章标题，例如："摘要"、"目录"、"第1章 绪论"、"参考文献"、"致谢"。</li>
+            </ul>
+            <p>页脚与页码设置</p>
+            <ul>
+                <li>启用 "奇偶页不同"。</li>
+                <li>封面不显示页脚和页码。</li>
+                <li>页码统一放在页脚中部。这一做法在不少高校规范中更常见，也更接近硕士论文通用写法。</li>
+                <li>页码字体：Times New Roman 五号。</li>
+                <li>页脚段落：居中对齐。</li>
+            </ul>
+            <p>页码编排要求：</p>
+            <ul>
+                <li>摘要、目录等前置部分：使用大写罗马数字连续编号，例如 I、II、III。</li>
+                <li>正文、参考文献、致谢等主体及后置部分：使用阿拉伯数字连续编号，例如 1、2、3。</li>
+                <li>正文首页作为阿拉伯数字页码的起始页。</li>
+                <li>页码格式中不加"第 页 / 共 页"等修饰。</li>
+            </ul>
+            <p>正文部分的专项测试要求</p>
+            <ul>
+                <li>正文首页开始启用阿拉伯数字页码。</li>
+                <li>正文各章之间使用分节符分隔，以测试不同章标题对应不同奇数页页眉。</li>
+                <li>例如：
+                    <ul>
+                        <li>第1章首页及后续页的奇数页页眉显示 "第1章 绪论"；</li>
+                        <li>第2章首页及后续页的奇数页页眉显示 "第2章 系统设计"。</li>
+                    </ul>
+                </li>
+                <li>偶数页页眉始终保持统一，不随章节变化。</li>
+            </ul>
+            <p>测试验证重点</p>
+            <p>请重点验证以下功能是否正常生效：</p>
+            <ul>
+                <li>页边距是否按指定数值正确设置；</li>
+                <li>装订线位置是否为左侧；</li>
+                <li>是否正确启用奇偶页不同；</li>
+                <li>是否正确使用分节符而非分页符；</li>
+                <li>是否能为不同节分别设置页眉页脚；</li>
+                <li>前置部分是否使用罗马数字页码；</li>
+                <li>正文部分是否切换为阿拉伯数字页码；</li>
+                <li>各章奇数页页眉是否能随章标题自动或手动更新；</li>
+                <li>页眉页脚设置是否真实写入 Word 文档。</li>
+            </ul>
+            <button class="copy-btn" onclick="copyPrompt(this)">复制</button>
+        </div>
+    </div>
+
+    <div class="section" id="section5">
+        <h2>五、目录设置</h2>
+
+        <h3 id="section5-1">5.1 中文目录</h3>
+        <div class="prompt-box">
+            <span class="task-title">提示词：</span>
+            <p>请使用 PyWord 技能，在高校毕业设计论文测试文档中自动生成中文目录，包含一级标题、二级标题、三级标题、点线引导符和对应页码。</p>
+            <p>目录标题为"目录"，单独成页。</p>
+            <p>标题设置为中文黑体、英文 Times New Roman、三号、加粗、居中、段前24磅、段后18磅、单倍行距；</p>
+            <p>目录条目设置为中文宋体、英文 Times New Roman、小四、左对齐、段前0磅、段后0磅、1.5倍行距，并支持自动更新。</p>
+            <button class="copy-btn" onclick="copyPrompt(this)">复制</button>
+        </div>
+
+        <h3 id="section5-2">5.2 图目录</h3>
+        <div class="prompt-box">
+            <span class="task-title">提示词：</span>
+            <p>请使用 PyWord 技能，在高校毕业设计论文测试文档中自动生成图目录，包含图序号、图题、点线引导符和对应页码。</p>
+            <p>图目录标题为"图目录"，单独成页。</p>
+            <p>标题设置为中文黑体、英文 Times New Roman、三号、加粗、居中、段前24磅、段后18磅、单倍行距；</p>
+            <p>目录条目设置为中文宋体、英文 Times New Roman、小四、左对齐、段前0磅、段后0磅、1.5倍行距，并支持自动更新。</p>
+            <button class="copy-btn" onclick="copyPrompt(this)">复制</button>
+        </div>
+
+        <h3 id="section5-3">5.3 表目录</h3>
+        <div class="prompt-box">
+            <span class="task-title">提示词：</span>
+            <p>请使用 PyWord 技能，在高校毕业设计论文测试文档中自动生成表目录，包含表序号、表题、点线引导符和对应页码。</p>
+            <p>表目录标题为"表目录"，单独成页。</p>
+            <p>标题设置为中文黑体、英文 Times New Roman、三号、加粗、居中、段前24磅、段后18磅、单倍行距；</p>
+            <p>目录条目设置为中文宋体、英文 Times New Roman、小四、左对齐、段前0磅、段后0磅、1.5倍行距，并支持自动更新。</p>
+            <button class="copy-btn" onclick="copyPrompt(this)">复制</button>
+        </div>
+    </div>
+
+    <div class="section" id="section6">
+        <h2>六、参考文献</h2>
+        <div class="prompt-box">
+            <span class="task-title">提示词：</span>
+            <p>请使用 PyWord 技能，在高校毕业设计论文测试文档中，根据项目目录下的 ref.txt 文件自动生成"参考文献"章节，并在正文中插入对应的交叉引用。</p>
+            <p>要求如下：</p>
+            <ul>
+                <li>参考文献标题"参考文献"：中文黑体、英文 Times New Roman、三号、加粗、居中、段前 24 磅、段后 18 磅、单倍行距。</li>
+                <li>参考文献条目：中文宋体、英文 Times New Roman、五号、两端对齐、段前 0 磅、段后 0 磅、固定值 20 磅、悬挂缩进 2 字符。</li>
+                <li>参考文献编号格式统一为 [1]、[2]、[3]。</li>
+                <li>正文引用采用 [1]、[2]、[3] 格式，并使用 Word 交叉引用域 插入，不得手动输入。</li>
+                <li>正文中的引用编号需与文末参考文献编号保持一致，并支持更新。</li>
+                <li>所有中文使用指定中文字体，所有英文、数字、字母使用 Times New Roman。</li>
+            </ul>
+            <button class="copy-btn" onclick="copyPrompt(this)">复制</button>
+        </div>
+    </div>
+
+    <div class="section" id="section7">
+        <h2>七、批注添加与提取</h2>
+
+        <h3 id="section7-1">7.1 插入批注</h3>
+        <div class="prompt-box">
+            <span class="task-title">提示词：</span>
+            <p>请使用 PyWord 技能，在高校毕业设计论文测试文档中，对正文、标题、表格或图片题注中的指定内容插入批注，用于测试 Word 批注插入功能是否正常生效。</p>
+            <p>插入批注需满足以下要求：</p>
+            <ul>
+                <li>批注应插入到指定文字、指定段落或指定对象上；</li>
+                <li>可对正文内容、标题内容、表格内容、图片题注添加批注；</li>
+                <li>每条批注应包含明确的批注内容；</li>
+                <li>批注内容应与当前论文修改场景相关，例如"表述需更正式""建议补充数据来源""标题层级需核对"；</li>
+                <li>批注应作为 Word 原生批注对象插入，而不是正文中的普通文字；</li>
+                <li>用于测试文档审阅与批注能力。</li>
+            </ul>
+            <p>样式与行为控制：</p>
+            <ul>
+                <li>批注必须绑定到对应的正文内容或对象；</li>
+                <li>不得将批注内容直接写入正文；</li>
+                <li>同一文档中可插入多条批注；</li>
+                <li>批注位置应准确，不得错位；</li>
+                <li>批注内容应简洁明确，符合论文审阅场景；</li>
+                <li>插入批注后，正文原有排版不得被破坏；</li>
+                <li>批注应保留在文档审阅结构中，便于后续提取与统计。</li>
+            </ul>
+            <button class="copy-btn" onclick="copyPrompt(this)">复制</button>
+        </div>
+
+        <h3 id="section7-2">7.2 提取批注</h3>
+        <div class="prompt-box">
+            <span class="task-title">提示词：</span>
+            <p>请使用 PyWord 技能，从高校毕业设计论文测试文档中提取全部批注内容，用于测试 Word 批注读取与结构化提取能力，提取出来的批注，请你使用一个html文件进行可视化展示。</p>
+            <p>提取批注需满足以下要求：</p>
+            <ul>
+                <li>识别并提取文档中的全部批注；</li>
+                <li>提取每条批注对应的批注文本；</li>
+                <li>提取每条批注所对应的原文位置或被批注内容；</li>
+                <li>如可获取，还应提取批注作者与批注时间；</li>
+                <li>按文档中的出现顺序输出；</li>
+                <li>用于测试批注解析与信息提取能力。</li>
+            </ul>
+            <p>输出要求：</p>
+            <ul>
+                <li>输出批注总数；</li>
+                <li>逐条列出批注信息；</li>
+                <li>每条批注至少包含：
+                    <ul>
+                        <li>被批注内容</li>
+                        <li>批注内容</li>
+                    </ul>
+                </li>
+                <li>如支持，补充输出：
+                    <ul>
+                        <li>批注作者</li>
+                        <li>批注时间</li>
+                        <li>所在章节或段落位置</li>
+                    </ul>
+                </li>
+                <li>输出结果应结构清晰，便于检查与复核；</li>
+                <li>提取过程中不得遗漏批注，不得将普通正文误识别为批注。</li>
+            </ul>
+            <button class="copy-btn" onclick="copyPrompt(this)">复制</button>
+        </div>
+    </div>
+
+    <script>
+        function copyPrompt(btn) {
+            const promptBox = btn.closest('.prompt-box');
+            let text = '';
+
+            // 获取所有段落和列表内容
+            const elements = promptBox.querySelectorAll('p, ul, ol');
+            elements.forEach(el => {
+                if (el.tagName === 'P') {
+                    text += el.innerText + '\n';
+                } else if (el.tagName === 'UL' || el.tagName === 'OL') {
+                    const items = el.querySelectorAll('li');
+                    items.forEach(item => {
+                        text += '• ' + item.innerText + '\n';
+                    });
+                }
+            });
+
+            navigator.clipboard.writeText(text.trim()).then(() => {
+                btn.textContent = '已复制';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.textContent = '复制';
+                    btn.classList.remove('copied');
+                }, 2000);
+            }).catch(err => {
+                console.error('复制失败:', err);
+                btn.textContent = '复制失败';
+            });
+        }
+    </script>
+</body>
+</html>

@@ -9,7 +9,7 @@
 | 分类 | 技能数量 | 说明 |
 |------|----------|------|
 | 📄 文档处理 | 8 | PDF、Word、Excel、PPTX 文档的创建、编辑、解析 |
-| 🔬 研究与知识管理 | 10 | 论文检索、文献综述、知识库管理、知识图谱 |
+| 🔬 研究与知识管理 | 9 | 论文检索、文献综述、知识库管理、知识图谱 |
 | 📈 量化金融 | 4 | A 股监控、金融数据接口、股票分析 |
 | 🎬 音视频转写 | 3 | YouTube 视频、音频文件转文字 |
 | 🤖 AI 辅助工具 | 8 | 搜索、新闻聚合、AI 内容检测、技能发现 |
@@ -233,19 +233,6 @@ obsidian search query="tag:#todo"
 - Callouts：`> [!type]`
 - Frontmatter 属性
 - 标签、别名
-
----
-
-### 10. markdown-converter
-**功能**: 使用 markitdown 将文件转换为 Markdown
-- 支持格式：PDF、Word、PPTX、Excel、HTML、CSV、JSON、XML
-- 媒体：图片（EXIF+OCR）、音频（转录）
-- 其他：ZIP、YouTube URL、EPub
-
-**命令**:
-```bash
-uvx markitdown input.pdf -o output.md
-```
 
 ---
 
@@ -687,7 +674,6 @@ python3 scripts/fetch_rss.py [hours]
 | humanizer-zh | AI 辅助工具 | AI 文本人性化 |
 | lesson | 系统与工具 | 经验存储 |
 | literature-review | 研究与知识管理 | 文献综述 |
-| markdown-converter | 研究与知识管理 | 格式转换 |
 | mcp-builder | AI 辅助工具 | MCP 服务器 |
 | minimax-docx | 文档处理 | Word 文档 |
 | minimax-pdf | 文档处理 | PDF 生成 |
@@ -768,4 +754,4 @@ metadata:（可选）
 ---
 
 **最后更新**: 2026-04-09
-**技能总数**: 52+
+**技能总数**: 51+

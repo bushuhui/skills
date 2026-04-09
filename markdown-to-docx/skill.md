@@ -1,3 +1,8 @@
+---
+name: markdown-to-docx
+description: Use this skill whenever a Markdown file needs to be converted to Word DOCX format. This includes: converting Markdown documents to .docx files, transforming LaTeX/math equations to Word OMML format, processing academic papers or technical documentation for Word output, working with Markdown templates that need Word delivery. Trigger when the user mentions converting Markdown to Word, .docx output, or any workflow where Markdown content must become a Word document.
+---
+
 # markdown-to-docx
 
 将 Markdown 文件（含 LaTeX 公式）转换为 Word DOCX 文件，支持将 LaTeX 公式转换为 Word 原生 OMML 格式。

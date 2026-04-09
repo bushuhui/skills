@@ -4,7 +4,7 @@ license: MIT
 metadata:
   version: "1.0.0"
   category: llm-gateway
-  author: PI-LLM-Server Team
+  author: PI-Lab
 description: >
   统一 LLM 服务网关，提供语音识别 (ASR)、文档解析 (OCR)、Embedding 向量生成、文档重排序 (Rerank) 服务。
   支持 PDF、图片、Office 文档、音频等多种文件格式。
@@ -17,10 +17,7 @@ triggers:
   - PDF 转 Markdown
   - OCR
   - embedding
-  - 向量
   - rerank
-  - 重排序
-  - PI-LLM
 ---
 
 ## 📺 技能描述
@@ -78,9 +75,14 @@ triggers:
 # 语音识别
 /skill pi-llm-server transcribe /path/to/audio.mp3
 
-# 文档解析
+# 文档解析（默认输出到源文件同目录）
 /skill pi-llm-server parse /path/to/document.pdf
-/skill pi-llm-server parse /path/to/document.docx
+# 输出：
+#   /path/to/document.md
+#   /path/to/document_images/
+
+# 文档解析（自定义输出目录）
+/skill pi-llm-server parse /path/to/document.pdf --output /custom/dir
 
 # Embedding
 /skill pi-llm-server embed "今天天气真好"
@@ -204,7 +206,8 @@ def transcribe_audio(audio_path, model="Qwen/Qwen3-ASR-1.7B"):
 ### Step 4: 文档解析 (OCR/MinerU)
 
 ```python
-def parse_document(file_path, backend="pipeline", return_md=True, return_images=True):
+def parse_document(file_path, backend="pipeline", return_md=True, return_images=True, 
+                   output_dir=None, fix_image_paths=True):
     """
     解析文档为 Markdown 和图片
     
@@ -213,21 +216,32 @@ def parse_document(file_path, backend="pipeline", return_md=True, return_images=
         backend: 解析后端 (pipeline/hybrid-auto-engine/vlm-auto-engine)
         return_md: 是否返回 Markdown
         return_images: 是否返回图片
+        output_dir: 输出目录 (默认与源文件同目录)
+        fix_image_paths: 是否自动修正 Markdown 中的图片路径
     
     Returns:
         dict: 解析结果，包含 markdown 和 images 路径
+    
+    输出结构:
+        - 源文件：/path/to/document.pdf
+        - Markdown: /path/to/document.md
+        - 图片目录：/path/to/document_images/
     """
     import os
     import zipfile
     import tempfile
+    import re
+    import shutil
     
     session = requests.Session()
     session.trust_env = False
     
-    print(f"Parsing {file_path}...")
+    file_name = os.path.basename(file_path)
+    base_name = os.path.splitext(file_name)[0]
+    print(f"Parsing {file_name}...")
     
     # 准备表单数据
-    files = {'files': (os.path.basename(file_path), open(file_path, 'rb'), 'application/octet-stream')}
+    files = {'files': (file_name, open(file_path, 'rb'), 'application/octet-stream')}
     data = {
         'backend': backend,
         'parse_method': 'auto',
@@ -248,30 +262,78 @@ def parse_document(file_path, backend="pipeline", return_md=True, return_images=
     if response.status_code != 200:
         raise Exception(f"API error: {response.status_code} - {response.text}")
     
-    # 保存 ZIP 并解压
-    output_dir = tempfile.mkdtemp(prefix='mineru_')
-    zip_path = os.path.join(output_dir, 'result.zip')
+    # 确定输出目录（默认与源文件同目录）
+    if output_dir is None:
+        output_dir = os.path.dirname(file_path)
+    
+    # 创建临时目录解压
+    temp_dir = tempfile.mkdtemp(prefix='mineru_')
+    zip_path = os.path.join(temp_dir, 'result.zip')
     
     with open(zip_path, 'wb') as f:
         f.write(response.content)
     
     # 解压
     with zipfile.ZipFile(zip_path, 'r') as zf:
-        zf.extractall(output_dir)
+        zf.extractall(temp_dir)
     
-    # 找到 markdown 文件
+    # 找到 markdown 文件和解压后的 images 目录
     md_files = []
-    images_dir = None
-    for root, dirs, files in os.walk(output_dir):
+    temp_images_dir = None
+    for root, dirs, files in os.walk(temp_dir):
         for f in files:
             if f.endswith('.md'):
                 md_files.append(os.path.join(root, f))
         if 'images' in dirs:
-            images_dir = os.path.join(root, 'images')
+            temp_images_dir = os.path.join(root, 'images')
+    
+    # 输出文件路径
+    final_md_paths = []
+    final_images_dir = os.path.join(output_dir, f"{base_name}_images")
+    
+    # 创建图片目录
+    os.makedirs(final_images_dir, exist_ok=True)
+    
+    for temp_md in md_files:
+        # 目标 Markdown 路径（与源文件同目录）
+        dst_md = os.path.join(output_dir, f"{base_name}.md")
+        
+        # 复制 Markdown 文件
+        shutil.copy2(temp_md, dst_md)
+        final_md_paths.append(dst_md)
+        
+        # 修正图片路径
+        if fix_image_paths and temp_images_dir:
+            with open(dst_md, 'r', encoding='utf-8') as f:
+                content = f.read()
+            
+            # 将 images/ 替换为 xxx_images/
+            new_content = re.sub(
+                r'!\[([^\]]*)\]\(images/',
+                f'![\\1]({base_name}_images/',
+                content
+            )
+            
+            with open(dst_md, 'w', encoding='utf-8') as f:
+                f.write(new_content)
+            
+            print(f"  ✓ Fixed image paths in {dst_md}")
+    
+    # 复制图片到目标目录
+    if temp_images_dir and os.path.exists(temp_images_dir):
+        if os.path.exists(final_images_dir):
+            shutil.rmtree(final_images_dir)
+        shutil.copytree(temp_images_dir, final_images_dir)
+        print(f"  ✓ Images copied to {final_images_dir}")
+    
+    # 清理临时目录
+    shutil.rmtree(temp_dir, ignore_errors=True)
+    
+    print(f"✓ Parsing complete: {dst_md}")
     
     return {
-        'markdown_files': md_files,
-        'images_dir': images_dir,
+        'markdown_files': final_md_paths,
+        'images_dir': final_images_dir,
         'output_dir': output_dir
     }
 ```
@@ -483,14 +545,33 @@ def transcribe_audio_cmd(audio_path, model="Qwen/Qwen3-ASR-1.7B"):
     print(f"\n长度：{len(text)} 字符")
 
 
-def parse_document_cmd(file_path, backend="pipeline"):
-    """文档解析命令行"""
+def parse_document_cmd(file_path, backend="pipeline", output_dir=None):
+    """
+    文档解析命令行
+    
+    输出结构:
+        - 源文件：/path/to/document.pdf
+        - Markdown: /path/to/document.md
+        - 图片目录：/path/to/document_images/
+    """
+    import os
+    import shutil
+    import re
+    import zipfile
+    import tempfile
+    
     session = requests.Session()
     session.trust_env = False
     
-    print(f"Parsing {file_path}...")
+    file_name = os.path.basename(file_path)
+    base_name = os.path.splitext(file_name)[0]
+    print(f"Parsing {file_name}...")
     
-    files = {'files': (os.path.basename(file_path), open(file_path, 'rb'), 'application/octet-stream')}
+    # 默认输出目录为源文件所在目录
+    if output_dir is None:
+        output_dir = os.path.dirname(file_path) or '.'
+    
+    files = {'files': (file_name, open(file_path, 'rb'), 'application/octet-stream')}
     data = {
         'backend': backend,
         'parse_method': 'auto',
@@ -512,24 +593,65 @@ def parse_document_cmd(file_path, backend="pipeline"):
         print(f"API error: {response.status_code} - {response.text}")
         return
     
-    output_dir = tempfile.mkdtemp(prefix='mineru_')
-    zip_path = os.path.join(output_dir, 'result.zip')
+    # 临时目录解压
+    temp_dir = tempfile.mkdtemp(prefix='mineru_')
+    zip_path = os.path.join(temp_dir, 'result.zip')
     
     with open(zip_path, 'wb') as f:
         f.write(response.content)
     
     with zipfile.ZipFile(zip_path, 'r') as zf:
-        zf.extractall(output_dir)
+        zf.extractall(temp_dir)
     
-    print(f"\n=== 解析完成 ===")
-    print(f"输出目录：{output_dir}")
-    
-    for root, dirs, files in os.walk(output_dir):
+    # 找到 markdown 文件和解压后的 images 目录
+    md_files = []
+    temp_images_dir = None
+    for root, dirs, files in os.walk(temp_dir):
         for f in files:
             if f.endswith('.md'):
-                print(f"Markdown: {os.path.join(root, f)}")
-            elif f.endswith(('.jpg', '.png')):
-                print(f"Image: {os.path.join(root, f)}")
+                md_files.append(os.path.join(root, f))
+        if 'images' in dirs:
+            temp_images_dir = os.path.join(root, 'images')
+    
+    # 最终输出路径
+    final_images_dir = os.path.join(output_dir, f"{base_name}_images")
+    os.makedirs(final_images_dir, exist_ok=True)
+    
+    for temp_md in md_files:
+        # 目标 Markdown 路径（与源文件同目录）
+        dst_md = os.path.join(output_dir, f"{base_name}.md")
+        
+        # 复制 Markdown 文件
+        shutil.copy2(temp_md, dst_md)
+        
+        # 修正图片路径：images/ -> xxx_images/
+        with open(dst_md, 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        new_content = re.sub(
+            r'!\[([^\]]*)\]\(images/',
+            f'![\\1]({base_name}_images/',
+            content
+        )
+        
+        with open(dst_md, 'w', encoding='utf-8') as f:
+            f.write(new_content)
+        
+        print(f"  ✓ Markdown: {dst_md}")
+    
+    # 复制图片到目标目录
+    if temp_images_dir and os.path.exists(temp_images_dir):
+        if os.path.exists(final_images_dir):
+            shutil.rmtree(final_images_dir)
+        shutil.copytree(temp_images_dir, final_images_dir)
+        print(f"  ✓ Images: {final_images_dir}")
+    
+    # 清理临时目录
+    shutil.rmtree(temp_dir, ignore_errors=True)
+    
+    print(f"\n=== 解析完成 ===")
+    print(f"Markdown: {dst_md}")
+    print(f"Images: {final_images_dir}/")
 
 
 def embed_text_cmd(text, model="unsloth/Qwen3-Embedding-0.6B"):
@@ -610,6 +732,7 @@ def main():
     parse_parser = subparsers.add_parser('parse', help='文档解析')
     parse_parser.add_argument('file', help='文件路径')
     parse_parser.add_argument('--backend', default='pipeline', help='解析后端')
+    parse_parser.add_argument('--output', '-o', default=None, help='输出目录（默认与源文件同目录）')
     
     # embed 命令
     embed_parser = subparsers.add_parser('embed', help='生成 Embedding')
@@ -629,7 +752,7 @@ def main():
     elif args.command == 'transcribe':
         transcribe_audio_cmd(args.audio_file, args.model)
     elif args.command == 'parse':
-        parse_document_cmd(args.file, args.backend)
+        parse_document_cmd(args.file, args.backend, args.output)
     elif args.command == 'embed':
         embed_text_cmd(args.text, args.model)
     elif args.command == 'rerank':
@@ -696,28 +819,33 @@ AI: 正在转写音频...
     结果：[转写内容]
 ```
 
-### 示例 2: PDF 解析
+### 示例 2: PDF 解析（新行为）
 
 ```
 用户：把这个产品规格书解析成 Markdown
-文件：product_spec.pdf
+文件：/path/to/product_spec.pdf
 
 AI: 正在解析 PDF...
-    ✓ 解析完成
-    Markdown: /tmp/mineru_xxx/document.md
-    图片目录：/tmp/mineru_xxx/images/ (共 15 张图片)
+    ✓ Markdown: /path/to/product_spec.md
+    ✓ Images: /path/to/product_spec_images/ (共 15 张图片)
+
+输出结构:
+    /path/to/product_spec.pdf       # 源文件
+    /path/to/product_spec.md        # Markdown 文件（与源文件同目录）
+    /path/to/product_spec_images/   # 图片目录（源文件_ images）
 ```
 
 ### 示例 3: Office 文档解析
 
 ```
 用户：解析这个 Word 文档
-文件：report.docx
+文件：/path/to/report.docx
 
 AI: 正在转换 docx 为 PDF...
-    ✓ 转换完成
-    ✓ 解析完成
-    Markdown: /tmp/mineru_xxx/report.md
+    ✓ Markdown: /path/to/report.md
+    ✓ Images: /path/to/report_images/
+
+注意：图片路径已自动修正为 report_images/
 ```
 
 ### 示例 4: Embedding
@@ -747,6 +875,29 @@ AI: ✓ 排序完成
 ---
 
 ## ⚠️ 注意事项
+
+### 0. 输出结构（已改进）
+
+**文档解析输出结构**:
+
+```
+源文件：    /path/to/document.pdf
+Markdown:   /path/to/document.md           # 与源文件同目录
+图片目录：  /path/to/document_images/      # 源文件同名 + _images
+```
+
+**图片路径自动修正**:
+- Markdown 中的 `images/` 路径会自动修正为 `document_images/`
+- 示例：`![](images/001.jpg)` → `![](document_images/001.jpg)`
+
+**自定义输出目录**:
+```bash
+# 默认：输出到源文件所在目录
+/skill pi-llm-server parse /path/to/doc.pdf
+
+# 自定义：输出到指定目录
+/skill pi-llm-server parse /path/to/doc.pdf --output /custom/output/dir
+```
 
 ### 1. 代理配置
 

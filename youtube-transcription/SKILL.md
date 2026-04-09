@@ -1,9 +1,6 @@
-# YouTube Transcription Skill - YouTube 视频转写技能
-
-> 创建日期：2026-03-20
-> 版本：1.0.0
-> 标签：#YouTube #音频转写 #Whisper #ASR #语音识别 #视频转文字
-
+---
+name: youtube-transcription
+description: YouTube 视频音频自动转写技能。使用 CDP 导出 Chrome cookies，yt-dlp 下载音频，调用 ASR API 转写（Qwen/Qwen3-ASR-1.7B），支持保存到知识库。Use when the user wants to transcribe YouTube video audio to text.
 ---
 
 ## 📺 技能描述

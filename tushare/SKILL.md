@@ -1,5 +1,5 @@
 ---
-name: Tushare Pro
+name: tushare
 slug: tushare
 description: Fetch Chinese stock and futures market data via Tushare API. Supports stock quotes, futures data, company fundamentals, and macroeconomic indicators. Use when the user needs financial data from Chinese markets. Requires TUSHARE_TOKEN environment variable.
 metadata:

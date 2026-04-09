@@ -14,9 +14,7 @@ description: |
 
 ## 环境变量
 
-```
-DOC2X_KEY=sk-a3ne3fg04blohlp1v1fh3six64zzh5oy
-```
+访问的key从环境变量 `DOC2X_KEY` 获取。
 
 ## 存储规则
 

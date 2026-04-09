@@ -1,14 +1,6 @@
 ---
 name: pi-llm-server
-license: MIT
-metadata:
-  version: "1.0.0"
-  category: llm-gateway
-  author: PI-Lab
-description: >
-  统一 LLM 服务网关，提供语音识别 (ASR)、文档解析 (OCR)、Embedding 向量生成、文档重排序 (Rerank) 服务。
-  支持 PDF、图片、Office 文档、音频等多种文件格式。
-  当用户需要转写音频、解析文档为 Markdown、生成嵌入向量或重排序文档时使用此技能。
+description: 统一 LLM 服务网关，提供语音识别 (ASR)、文档解析 (OCR)、Embedding 向量生成、文档重排序 (Rerank) 服务。支持 PDF、图片、Office 文档、音频等多种文件格式。当用户需要转写音频、解析文档为 Markdown、生成嵌入向量或重排序文档时使用此技能。
 triggers:
   - 语音识别
   - 转写

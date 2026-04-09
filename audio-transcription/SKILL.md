@@ -1,9 +1,6 @@
-# Audio Transcription Skill - 音频转写技能
-
-> 创建日期：2026-03-20
-> 版本：1.0.0
-> 标签：#音频转写 #Whisper #ASR #语音识别
-
+---
+name: audio-transcription
+description: 音频转写技能，将音频文件（MP3/WAV 等）自动转写为文字。支持 Qwen/Qwen3-ASR-1.7B 模型。Use when the user wants to transcribe audio files to text.
 ---
 
 ## 📺 技能描述

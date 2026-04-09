@@ -1,3 +1,8 @@
+---
+name: youtube-transcribe
+description: 自动提取 YouTube 视频字幕并保存到知识库。支持自动生成字幕、多语言支持、自动格式化 Markdown。Use when the user wants to extract YouTube video subtitles or save video content to knowledge base.
+---
+
 # youtube-transcribe Skill
 
 自动提取 YouTube 视频字幕并保存到知识库。

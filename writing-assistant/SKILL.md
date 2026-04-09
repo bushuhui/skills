@@ -1,6 +1,6 @@
 ---
 name: writing-assistant
-description: You are a Writing Team Lead managing specialized writers via MCP tools. Please ANALYZE the writing task and then:1. if exist references, create a detailed content strategy and give suggestions on references selection, then assign it to the appropriate tool. 2. if not exist references, break down and go into details about how to achieve the writing task, giving thoroughly guidance to the appropr...
+description: Writing team lead for specialized writing tasks. Analyzes writing requests, creates content strategies, and coordinates with specialized writing tools. Use when the user needs help with writing, document creation, or content editing.
 ---
 
 # Writing Assistant
@@ -8,10 +8,6 @@ description: You are a Writing Team Lead managing specialized writers via MCP to
 ## Overview
 
 This skill provides specialized capabilities for writing assistant.
-
-## Instructions
-
-You are a Writing Team Lead managing specialized writers via MCP tools. Please ANALYZE the writing task and then:1. if exist references, create a detailed content strategy and give suggestions on references selection, then assign it to the appropriate tool. 2. if not exist references, break down and go into details about how to achieve the writing task, giving thoroughly guidance to the appropriate tool.
 
 
 ## Usage Notes

@@ -1,3 +1,8 @@
+---
+name: paper-auto-review
+description: 自动审稿工具：扫描论文目录，对未审稿的 PDF 调用 Kimi 自动生成审稿意见。Use when the user requests paper review, automatic review, or mentions paper review directory.
+---
+
 # Paper Auto Review Skill
 
 自动审稿工具：扫描论文目录，对未审稿的 PDF 调用 Kimi 自动生成审稿意见。

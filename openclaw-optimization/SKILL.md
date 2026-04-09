@@ -1,3 +1,8 @@
+---
+name: openclaw-optimization
+description: Systematic performance optimization for OpenClaw AI agents. Covers session management, context budget optimization, token tracking, and automated maintenance. Use when optimizing OpenClaw agent performance or conducting routine maintenance.
+---
+
 # OpenClaw Optimization Skill
 
 Systematic performance optimization for OpenClaw AI agents. Covers session management, context budget optimization, token tracking, and automated maintenance.

@@ -1,6 +1,6 @@
 # OpenClaw Skills 文档
 
-本目录包含 45+ 个 OpenClaw AI Agent 技能，涵盖文档处理、研究分析、量化金融、音视频转写、AI 辅助工具等多个领域。
+本目录包含 55+ 个 OpenClaw AI Agent 技能，涵盖文档处理、研究分析、量化金融、音视频转写、AI 辅助工具等多个领域。
 
 ---
 
@@ -8,7 +8,7 @@
 
 | 分类 | 技能数量 | 说明 |
 |------|----------|------|
-| 📄 文档处理 | 8 | PDF、Word、Excel、PPTX 文档的创建、编辑、解析 |
+| 📄 文档处理 | 10 | PDF、Word、Excel、PPTX 文档的创建、编辑、解析 |
 | 🔬 研究与知识管理 | 9 | 论文检索、文献综述、知识库管理、知识图谱 |
 | 📈 量化金融 | 4 | A 股监控、金融数据接口、股票分析 |
 | 🎬 音视频转写 | 3 | YouTube 视频、音频文件转文字 |
@@ -16,6 +16,7 @@
 | 🧠 思维与创意 | 11 | 头脑风暴、算法艺术、设计哲学、思维模型 |
 | ⚙️ 系统与工具 | 5 | OpenClaw 优化、MCP 服务、数据库、Obsidian 工具 |
 | 📚 写作与润色 | 3 | 学术写作、文稿润色、AI 文本人性化 |
+| 🎨 图表与演示 | 4 | Draw.io 图表、HTML 幻灯片、视觉认知设计 |
 
 ---
 
@@ -90,15 +91,7 @@
 
 ---
 
-### 6. pptx
-**功能**: PowerPoint 演示文稿处理
-- 读取/提取内容：`python -m markitdown presentation.pptx`
-- 编辑或从模板创建
-- 从零创建幻灯片
-
----
-
-### 7. pdf
+### 6. pdf
 **功能**: PDF 文件处理
 - 文本/表格提取
 - 合并/拆分 PDF
@@ -110,7 +103,7 @@
 
 ---
 
-### 8. pyword
+### 7. pyword
 **功能**: Word 自动化 Python 脚本体系
 - 文档创建、排版、解析
 - 标题编号、样式控制
@@ -119,6 +112,83 @@
 - 结构化解构
 
 **使用方式**: 优先复用 skill 内置的 `docs/` 和 `scripts/*.py`
+
+---
+
+### 8. markdown-to-docx
+**功能**: Markdown 转 Word DOCX（含 LaTeX 公式）
+- 自动检测并修正 LaTeX 公式格式问题
+- 使用 pandoc 转换，公式自动转为 Word 原生 OMML 格式
+- 支持行内公式 `$...$`、块级公式 `$$...$$`
+- 支持矩阵、分数、根式、积分、求和等常见数学符号
+
+**使用**:
+```bash
+/markdown-to-docx paper.md output.docx
+```
+
+---
+
+## 🎨 图表与演示技能
+
+### 1. drawio-skill
+**功能**: 创建图表、流程图、架构图
+- 生成 `.drawio` XML 文件
+- 本地导出 PNG/SVG/PDF/JPG（使用 draw.io desktop CLI）
+- 支持多种图表类型：ERD、UML、Sequence、Architecture、ML/DL、Flowchart
+- 自检功能：自动检测重叠、标签溢出等问题
+- 支持嵌入式导出（导出文件包含可编辑 XML）
+
+**触发**: "diagram", "visualize", "flowchart", "architecture diagram"
+
+**依赖**: draw.io desktop app CLI
+
+---
+
+### 2. frontend-slides
+**功能**: 创建动画丰富的 HTML 幻灯片
+- **零依赖**: 单 HTML 文件，inline CSS/JS，无需 npm/build tools
+- **独特设计**: 避免"AI slop"审美，自定义字体和配色
+- **视口适配**: 每张 slide 精确适配 100vh，无滚动
+- **模式**: 从零创建 / PPT 转换 / 增强现有 HTML
+
+**流程**:
+1. Phase 0: 检测模式
+2. Phase 1: 内容发现（目的、长度、内容准备度）
+3. Phase 2: 风格发现（展示 3 个风格预览）
+4. Phase 3: 生成完整演示
+5. Phase 5: 交付 + 可选部署/导出
+
+**分享**: 支持部署到 Vercel（生成 URL）、导出 PDF
+
+---
+
+### 3. visual-cognition-slides
+**功能**: 视觉认知设计协作者
+- 基于认知科学与教学设计，但用户无需了解理论
+- 把知识转化为观众能接收、理解、记住的视觉叙事
+- **绝对禁止**: bullet point 堆砌、渐变背景白字、AI 味审美
+
+**入口判断**:
+- 粗想法 → Intake 问诊
+- 已有草稿 → 快速校验
+- PPTX 文件 → 转换
+- PDF 文件 → 转换
+
+**工作流**:
+1. Step 1: Intake 问诊（受众、核心信息）
+2. Step 2: 叙事骨架
+3. Step 3: 视觉风格选择（11 种预设）
+4. Step 4: Visual Translation + 动画设计
+5. Step 5: 生成 HTML
+
+---
+
+### 4. pptx
+**功能**: PowerPoint 演示文稿处理
+- 读取/提取内容：`python -m markitdown presentation.pptx`
+- 编辑或从模板创建
+- 从零创建幻灯片
 
 ---
 
@@ -608,12 +678,24 @@ bash scripts/health-check.sh
 ### 2. paper-auto-review
 **功能**: 自动审稿工具
 - 扫描论文目录
-- 对未审稿 PDF 调用 Kimi 自动生成审稿意见
-- 输出：`review_kimi.md`
+- 使用 pi-llm-server 将 PDF/DOCX 转 Markdown
+- 调用 Bailian LLM（qwen3.6-plus）生成审稿意见
+- 自动检测论文语言（中文/英文），使用对应审稿 Prompt
+- 输出：每篇论文目录下的 `{原名}_review_draft.md`
 
 **配置**:
-- 脚本：`/home/bushuhui/scripts/teching_research/auto_review/kimi_pdf_auto_review.py`
+- 脚本：`paper_auto_review.py`（本 skill 目录下）
+- 审稿 Prompt：`review_prompt.md`（英文）/ `review_prompt_cn.md`（中文）
 - 论文目录：`/home/bushuhui/datacenter/papers/paper-review/`
+
+**使用**:
+```bash
+# 扫描待审稿论文
+python3 paper_auto_review.py --year 2026 --dry-run
+
+# 执行审稿
+python3 paper_auto_review.py --year 2026
+```
 
 ---
 
@@ -669,11 +751,14 @@ python3 scripts/fetch_rss.py [hours]
 | deep-research | 研究与知识管理 | 深度研究 |
 | doc2x | 文档处理 | PDF 转 Markdown |
 | docx | 文档处理 | Word 文档 |
+| drawio-skill | 图表与演示 | Draw.io 图表绘制 |
 | find-skills | AI 辅助工具 | 技能发现 |
+| frontend-slides | 图表与演示 | HTML 幻灯片创建 |
 | graphify | 研究与知识管理 | 知识图谱 |
 | humanizer-zh | AI 辅助工具 | AI 文本人性化 |
 | lesson | 系统与工具 | 经验存储 |
 | literature-review | 研究与知识管理 | 文献综述 |
+| markdown-to-docx | 文档处理 | Markdown 转 Word |
 | mcp-builder | AI 辅助工具 | MCP 服务器 |
 | minimax-docx | 文档处理 | Word 文档 |
 | minimax-pdf | 文档处理 | PDF 生成 |
@@ -688,7 +773,7 @@ python3 scripts/fetch_rss.py [hours]
 | pdf | 文档处理 | PDF 处理 |
 | pi-llm-server | AI 辅助工具 | LLM 网关 |
 | postgres | AI 辅助工具 | PostgreSQL |
-| pptx | 文档处理 | PowerPoint |
+| pptx | 图表与演示 | PowerPoint |
 | pyword | 文档处理 | Word 自动化 |
 | stock-study | 量化金融 | 股票分析 |
 | thinker-elon-musk | 思维与创意 | 马斯克思维模型 |
@@ -699,6 +784,7 @@ python3 scripts/fetch_rss.py [hours]
 | thinker-taleb | 思维与创意 | 塔勒布反脆弱 |
 | thinker-zhangxuefeng | 思维与创意 | 张雪峰教育规划 |
 | tushare | 量化金融 | 金融数据 |
+| visual-cognition-slides | 图表与演示 | 视觉认知设计 |
 | writing-assistant | 系统与工具 | 写作助手 |
 | xlsx | 文档处理 | Excel 处理 |
 | youtube-transcribe | 音视频转写 | YouTube 字幕 |
@@ -753,5 +839,5 @@ metadata:（可选）
 
 ---
 
-**最后更新**: 2026-04-09
-**技能总数**: 51+
+**最后更新**: 2026-04-14
+**技能总数**: 55+

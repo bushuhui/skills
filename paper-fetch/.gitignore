@@ -1,0 +1,20 @@
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo
+
+# Default download output (created on use)
+pdfs/
+
+# Idempotency sidecars (if stored in repo dir)
+.paper-fetch-idem/
+
+# Playwright MCP workspace
+.playwright-mcp/
+
+# Tests
+tests/
+
+# OS cruft
+.DS_Store
+Thumbs.db

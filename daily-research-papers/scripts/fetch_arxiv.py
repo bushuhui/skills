@@ -75,11 +75,17 @@ def is_relevant(title, summary, cats):
 def fetch_category(cat, max_results=100):
     url = f"https://export.arxiv.org/api/query?search_query=cat:{cat}&sortBy=submittedDate&sortOrder=descending&max_results={max_results}"
     req = Request(url, headers={"User-Agent": "DailyResearchPapers/1.0"})
-    try:
-        data = urlopen(req, timeout=60).read()
-    except Exception as e:
-        print(f"# Error fetching {cat}: {e}", file=sys.stderr)
-        return []
+    for attempt in range(3):
+        try:
+            data = urlopen(req, timeout=60).read()
+            break
+        except Exception as e:
+            if attempt < 2 and "429" in str(e):
+                print(f"# Rate limited on {cat}, retry {attempt+1}...", file=sys.stderr)
+                time.sleep(15)
+            else:
+                print(f"# Error fetching {cat}: {e}", file=sys.stderr)
+                return []
 
     root = ET.fromstring(data)
     cutoff = datetime.now(timezone.utc) - timedelta(hours=HOURS)
@@ -154,7 +160,7 @@ def main():
                 for c in p["categories"]:
                     if c not in all_papers[aid]["categories"]:
                         all_papers[aid]["categories"].append(c)
-        time.sleep(3)  # arXiv rate limit: 3s between requests
+        time.sleep(8)  # arXiv rate limit: increased to 8s
 
     result = sorted(all_papers.values(), key=lambda x: x["published"], reverse=True)
     json.dump(result, sys.stdout, ensure_ascii=False, indent=2)

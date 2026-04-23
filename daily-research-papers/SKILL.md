@@ -7,6 +7,9 @@ description: |
   - 每天早上 7:00 cron 自动执行
   - 用户要求抓取最新论文
   - 用户提到 "论文速递" 或 "paper digest"
+  配置参数：
+  - `CLIPPINGS_DIR`: 知识库 Clippings 目录路径，默认为 `/home/a409/knowledge_base/note/pi-lab/Clippings`
+    调用时在 prompt 中传入，如："请保存到 /xxx/Clippings 目录"
 ---
 
 # Daily Research Papers
@@ -70,8 +73,11 @@ python3 scripts/fetch_x_papers.py
 
 ### 步骤 5：翻译并保存到知识库（带重试机制）
 
-⚠️ 文件命名规则（避免 bisync 冲突）：
-- 目标文件：`/home/bushuhui/data-all/note/bushuhui/Clippings/YYYYMM/YYYYMMDD-research-papers.md`
+⚠️ **输出目录配置**：
+- 使用变量 `${CLIPPINGS_DIR}` 作为知识库 Clippings 根目录
+- 默认值：`/home/a409/knowledge_base/note/pi-lab/Clippings`
+- 如果调用方（cron prompt / 用户指令）指定了其他目录，使用指定的目录
+- 目标文件：`${CLIPPINGS_DIR}/YYYYMM/YYYYMMDD-research-papers.md`
 - 独立文件，不要写入 `YYYYMMDD.md` 主文件！
 
 **写入策略（防止 LiveSync 锁定导致失败）：**
@@ -152,12 +158,6 @@ function writeWithRetry(path, content, maxRetries=3):
 - 摘要翻译成中文，3-5 句话，突出核心贡献和方法创新
 - 专有名词保留英文（如 Transformer、RLHF、PPO、VLA 等）
 - 如果论文跨多个领域，放在最相关的分类下，其他分类加引用
-
-### 步骤 6：同步
-
-```bash
-bash /home/bushuhui/scripts/backup_bushuhui_webdav.sh
-```
 
 ## 注意事项
 

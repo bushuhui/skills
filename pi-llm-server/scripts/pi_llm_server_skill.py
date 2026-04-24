@@ -63,7 +63,11 @@ def check_status():
 
 
 def transcribe_audio_cmd(audio_path, model="Qwen/Qwen3-ASR-1.7B"):
-    """语音识别命令行"""
+    """
+    语音识别命令行
+    输出到源文件所在目录:
+        /path/to/audio.txt
+    """
     if audio_path.startswith('http://') or audio_path.startswith('https://'):
         print(f"Downloading from {audio_path}...")
         session = requests.Session()
@@ -81,7 +85,10 @@ def transcribe_audio_cmd(audio_path, model="Qwen/Qwen3-ASR-1.7B"):
     session = requests.Session()
     session.trust_env = False
 
-    print(f"Transcribing {audio_path}...")
+    src_dir = os.path.dirname(os.path.abspath(audio_path))
+    file_name = os.path.basename(audio_path)
+    base_name = os.path.splitext(file_name)[0]
+    print(f"Transcribing {file_name}...")
 
     with open(audio_path, 'rb') as f:
         files = {'file': (os.path.basename(audio_path), f, 'audio/mpeg')}
@@ -101,19 +108,35 @@ def transcribe_audio_cmd(audio_path, model="Qwen/Qwen3-ASR-1.7B"):
 
     result = response.json()
     text = result.get('text', '')
-    print(f"\n=== 转写结果 ===")
-    print(text)
-    print(f"\n长度：{len(text)} 字符")
+
+    # 保存为同名 .txt 文件
+    dst_txt = os.path.join(src_dir, f"{base_name}.txt")
+    with open(dst_txt, 'w', encoding='utf-8') as f:
+        f.write(text)
+
+    print(f"  Text: {dst_txt}")
+    print(f"  长度：{len(text)} 字符")
 
 
 def parse_document_cmd(file_path, backend="pipeline"):
-    """文档解析命令行"""
+    """
+    文档解析命令行
+    输出到源文件所在目录:
+        /path/to/document.md
+        /path/to/document_images/
+    """
+    import shutil
+    import re
+
     session = requests.Session()
     session.trust_env = False
 
-    print(f"Parsing {file_path}...")
+    file_name = os.path.basename(file_path)
+    base_name = os.path.splitext(file_name)[0]
+    src_dir = os.path.dirname(os.path.abspath(file_path))
+    print(f"Parsing {file_name}...")
 
-    files = {'files': (os.path.basename(file_path), open(file_path, 'rb'), 'application/octet-stream')}
+    files = {'files': (file_name, open(file_path, 'rb'), 'application/octet-stream')}
     data = {
         'backend': backend,
         'parse_method': 'auto',
@@ -135,24 +158,58 @@ def parse_document_cmd(file_path, backend="pipeline"):
         print(f"API error: {response.status_code} - {response.text}")
         return
 
-    output_dir = tempfile.mkdtemp(prefix='mineru_')
-    zip_path = os.path.join(output_dir, 'result.zip')
-
+    # 临时目录解压
+    temp_dir = tempfile.mkdtemp(prefix='mineru_')
+    zip_path = os.path.join(temp_dir, 'result.zip')
     with open(zip_path, 'wb') as f:
         f.write(response.content)
-
     with zipfile.ZipFile(zip_path, 'r') as zf:
-        zf.extractall(output_dir)
+        zf.extractall(temp_dir)
 
-    print(f"\n=== 解析完成 ===")
-    print(f"输出目录：{output_dir}")
-
-    for root, dirs, files in os.walk(output_dir):
-        for f in files:
+    # 找到 markdown 和 images 目录
+    md_files = []
+    temp_images_dir = None
+    for root, dirs, files_list in os.walk(temp_dir):
+        for f in files_list:
             if f.endswith('.md'):
-                print(f"Markdown: {os.path.join(root, f)}")
-            elif f.endswith(('.jpg', '.png')):
-                print(f"Image: {os.path.join(root, f)}")
+                md_files.append(os.path.join(root, f))
+        if 'images' in dirs:
+            temp_images_dir = os.path.join(root, 'images')
+
+    # 目标目录
+    final_images_dir = os.path.join(src_dir, f"{base_name}_images")
+    os.makedirs(final_images_dir, exist_ok=True)
+
+    # 复制 markdown 并修正图片路径
+    for temp_md in md_files:
+        dst_md = os.path.join(src_dir, f"{base_name}.md")
+        shutil.copy2(temp_md, dst_md)
+
+        if temp_images_dir:
+            with open(dst_md, 'r', encoding='utf-8') as f:
+                content = f.read()
+            new_content = re.sub(
+                r'!\[([^\]]*)\]\(images/',
+                f'![\\1]({base_name}_images/',
+                content
+            )
+            with open(dst_md, 'w', encoding='utf-8') as f:
+                f.write(new_content)
+
+    # 复制图片
+    if temp_images_dir and os.path.exists(temp_images_dir):
+        if os.path.exists(final_images_dir):
+            shutil.rmtree(final_images_dir)
+        shutil.copytree(temp_images_dir, final_images_dir)
+
+    # 清理临时目录
+    shutil.rmtree(temp_dir, ignore_errors=True)
+
+    # 统计图片数量
+    img_count = len([f for f in os.listdir(final_images_dir) if os.path.isfile(os.path.join(final_images_dir, f))])
+
+    print(f"  Markdown: {os.path.join(src_dir, f'{base_name}.md')}")
+    print(f"  Images:   {final_images_dir}/ ({img_count} 张)")
 
 
 def embed_text_cmd(text, model="unsloth/Qwen3-Embedding-0.6B"):

@@ -8,14 +8,14 @@
 
 | 分类 | 技能数量 | 说明 |
 |------|----------|------|
-| 📄 文档处理 | 10 | PDF、Word、Excel、PPTX 文档的创建、编辑、解析 |
+| 📄 文档处理 | 8 | PDF、Word、Excel、PPTX 文档的创建、编辑、解析 |
 | 🔬 研究与知识管理 | 9 | 论文检索、文献综述、知识库管理、知识图谱 |
-| 📈 量化金融 | 4 | A 股监控、金融数据接口、股票分析 |
+| 📈 量化金融 | 3 | A 股监控、金融数据接口、股票分析 |
 | 🎬 音视频转写 | 3 | YouTube 视频、音频文件转文字 |
 | 🤖 AI 辅助工具 | 8 | 搜索、新闻聚合、AI 内容检测、技能发现 |
 | 🧠 思维与创意 | 11 | 头脑风暴、算法艺术、设计哲学、思维模型 |
 | ⚙️ 系统与工具 | 5 | OpenClaw 优化、MCP 服务、数据库、Obsidian 工具 |
-| 📚 写作与润色 | 3 | 学术写作、文稿润色、AI 文本人性化 |
+| 📚 写作与润色 | 4 | 学术论文审稿、文稿润色、AI 文本人性化 |
 | 🎨 图表与演示 | 4 | Draw.io 图表、HTML 幻灯片、视觉认知设计 |
 
 ---
@@ -112,20 +112,6 @@
 - 结构化解构
 
 **使用方式**: 优先复用 skill 内置的 `docs/` 和 `scripts/*.py`
-
----
-
-### 8. markdown-to-docx
-**功能**: Markdown 转 Word DOCX（含 LaTeX 公式）
-- 自动检测并修正 LaTeX 公式格式问题
-- 使用 pandoc 转换，公式自动转为 Word 原生 OMML 格式
-- 支持行内公式 `$...$`、块级公式 `$$...$$`
-- 支持矩阵、分数、根式、积分、求和等常见数学符号
-
-**使用**:
-```bash
-/markdown-to-docx paper.md output.docx
-```
 
 ---
 
@@ -360,34 +346,51 @@ export TUSHARE_TOKEN="your-api-token"
 
 ## 🎬 音视频转写技能
 
-### 1. youtube-transcribe
-**功能**: 提取 YouTube 视频字幕并保存到知识库
+### 1. youtube-subtitle
+**功能**: 提取 YouTube 视频字幕（caption/subtitle）并保存到知识库
+- 使用 `youtube-transcript-api` 直接拉取字幕轨道，无需下载音频
 - 支持自动生成字幕
 - 多语言支持（zh-CN、en 等）
 - 自动格式化 Markdown
-- 依赖：`youtube-transcript-api`
+- 自动保存到知识库（Clippings/YouTube-Transcripts/）
+- WebDAV 自动同步
 
 **使用**:
 ```
 转写这个视频：https://www.youtube.com/watch?v=xxx
 ```
 
+**依赖**: `pip install youtube-transcript-api`
+
 ---
 
-### 2. youtube-transcription
-**功能**: YouTube 视频音频转写（ASR）
-- CDP 导出 Chrome cookies
-- yt-dlp 下载音频
-- 调用 ASR API（Qwen/Qwen3-ASR-1.7B）
+### 2. youtube-asr
+**功能**: YouTube 视频音频自动转写（ASR）
+- CDP 导出 Chrome cookies（Netscape 格式）
+- yt-dlp 下载音频（带 cookies + JS runtime）
+- 调用 ASR API 转写（Qwen/Qwen3-ASR-1.7B）
 - 保存到知识库
+- 支持保存到 Obsidian（`--save-to-obsidian`）
 
 **流程**:
 ```bash
-# 1. 导出 cookies
-# 2. yt-dlp -x --audio-format mp3 --cookies ...
-# 3. POST to ASR API
+# 1. CDP 导出 cookies
+# 2. yt-dlp -x --audio-format mp3 --cookies ... --js-runtimes node --remote-components ejs:github
+# 3. POST to ASR API (禁用代理, timeout=600)
 # 4. Save to Obsidian
 ```
+
+**性能指标**:
+| 指标 | 值 |
+|------|-----|
+| 下载速度 | ~1-5 MB/s |
+| 转写速度 | ~1-2 分钟/10 分钟音频 |
+| 准确率 | 中文 ~95%，英文 ~98% |
+
+**注意事项**:
+- YouTube 有反爬虫机制，需要登录态（cookies）
+- yt-dlp 参数缺一不可，否则 403 / n parameter / PO Token 错误
+- ASR API 调用必须禁用代理（`session.trust_env = False`）
 
 ---
 
@@ -440,16 +443,18 @@ python3 scripts/brave_search.py "query" --news
 
 ### 4. humanizer-zh
 **功能**: 去除 AI 生成文本痕迹
-- 检测模式：夸大象征、宣传性语言、模糊归因、AI 词汇
-- 基于维基百科"AI 写作特征"指南
-- 注入真实个性
+- 检测 23 种 AI 写作模式：夸大的象征意义、宣传性语言、模糊归因、AI 词汇、破折号过度使用、三段式法则、否定式排比等
+- 基于维基百科"AI 写作特征"指南（WikiProject AI Cleanup）
+- 注入真实个性：观点、节奏变化、复杂性承认、第一人称、幽默
 
 **核心规则**:
 1. 删除填充短语
 2. 打破公式结构
-3. 变化节奏
+3. 变化节奏（短句+长句混合，两项优于三项）
 4. 用具体替代模糊
-5. 删除"关键""重要"等强调词
+5. 删除"关键""重要"等强调词和金句
+
+**质量评分**: 5 维度评估（直接性、节奏、信任度、真实性、精炼度），满分 50 分
 
 ---
 
@@ -462,13 +467,21 @@ python3 scripts/brave_search.py "query" --news
 ---
 
 ### 6. pi-llm-server
-**功能**: 统一 LLM 服务网关
-- 语音识别（ASR）
-- 文档解析（OCR）：PDF、图片、Office 文档 → Markdown
-- Embedding 向量生成
-- Rerank 文档重排序
+**功能**: 统一 LLM 服务网关，提供 4 种服务：
 
-**环境变量**: `DOC2X_KEY`、`API_TOKEN`
+| 服务 | 端点 | 模型 | 说明 |
+|------|------|------|------|
+| **ASR** | `/v1/audio/transcriptions` | `Qwen/Qwen3-ASR-1.7B` | 语音识别 |
+| **OCR** | `/v1/ocr/parser` | `mineru/pipeline` | 文档解析（支持 pipeline/hybrid-auto-engine/vlm-auto-engine 三种后端） |
+| **Embedding** | `/v1/embeddings` | `unsloth/Qwen3-Embedding-0.6B` | 文本向量化 |
+| **Reranker** | `/v1/rerank` | `Qwen/Qwen3-Reranker-0.6B` | 文档重排序 |
+
+- **API 地址**: `http://api.adv-ci.com:8090/v1`（环境变量 `PI_LLM_URL`）
+- **Swagger**: `http://api.adv-ci.com:8090/docs`
+- **支持格式**: PDF、图片、Word、PPT、Excel、音频
+- **输出规范**: 统一输出 Markdown + 图片，文档解析后自动删除页眉页脚，公式转 LaTeX，代码块标注语言
+- **超时**: ASR 600s / OCR 1800s / Embedding 60s / Rerank 120s
+- **注意**: 必须禁用代理（`session.trust_env = False`）
 
 ---
 
@@ -621,10 +634,12 @@ python3 scripts/brave_search.py "query" --news
 ### 10. thinker-taleb
 **功能**: 塔勒布的思维框架与表达方式
 - **核心心智模型**: 非对称风险、反脆弱偏好、Skin in the Game、林迪效应、Via Negativa、领域特异性
-- **决策启发式**: 9 条原则（预防原则、杠铃策略、遍历性检验、火鸡问题、少数派规则等）
-- **表达 DNA**: 格言体、确定性极高、攻击性是 feature、古典引用（Seneca、汉谟拉比）
+- **决策启发式**: 9 条原则（预防原则、杠铃策略、遍历性检验、火鸡问题、少数派规则、框架重置、绿木交易员、凸性试错、反信号启发式）
+- **表达 DNA**: 格言体、确定性极高、攻击性是 feature、古典引用（Seneca、汉谟拉比）、中文输出适配（「OK?」→「就这么回事」）
+- **角色扮演**: 直接以塔勒布身份回应，用「我」而非第三人称，免责声明仅首次说一次
 - **触发场景**: 极端风险评估、尾部风险识别、反脆弱策略、专家可信度检验
-- **信息源**: Incerto 五部曲、EconTalk 访谈、COVID 预警论文、Twitter/Medium 表达
+- **信息源**: Incerto 五部曲、EconTalk 访谈、COVID 预警论文、Twitter/Medium 表达、外部批评分析
+- **调研时间**: 2026年4月4日
 
 **示例**:
 ```
@@ -638,10 +653,13 @@ python3 scripts/brave_search.py "query" --news
 ### 11. thinker-zhangxuefeng
 **功能**: 张雪峰的思维框架与表达方式
 - **核心心智模型**: 社会筛子论、选择>努力、就业倒推法、阶层现实主义、争议即传播
-- **决策启发式**: 8 条原则（灵魂追问法、中位数原则、不可替代性检验、500 强测试等）
+- **决策启发式**: 8 条原则（灵魂追问法、中位数原则、不可替代性检验、500 强测试、家庭背景分流、城市优先、10 年后压迫测试、认态度不认事实道歉法）
 - **表达 DNA**: 短句快节奏、东北式幽默、绝对化表达、金句截图友好
+- **角色扮演**: 直接以张雪峰身份回应，用「我」而非第三人称，免责声明仅首次说一次
 - **触发场景**: 教育选择、职业规划、阶层流动分析、志愿填报决策
 - **信息源**: 5 本著作、15+ 篇权威采访、30+ 条一手语录、完整人生时间线
+- **最新动态**: 张雪峰于 2026年3月24日因心源性猝死去世，终年41岁；遗作《从就业看专业》出版
+- **调研时间**: 2026年4月5日
 
 **示例**:
 ```
@@ -734,22 +752,20 @@ python3 scripts/fetch_rss.py [hours]
 
 | 技能名 | 分类 | 主要功能 |
 |--------|------|----------|
-| academic-writing | 写作与润色 | 学术论文写作 |
+| artifacts-builder | 文档处理 | HTML 构建 |
 | agent-reach | AI 辅助工具 | 多平台访问配置 |
 | ai-news-collectors | AI 辅助工具 | AI 新闻聚合 |
 | algorithmic-art | 思维与创意 | 算法艺术 |
 | andrej-karpathy-curated-rss | 系统与工具 | RSS 抓取 |
 | a-stock-monitor-1-1-2 | 量化金融 | A 股监控系统 |
 | arxiv-watcher | 研究与知识管理 | ArXiv 论文 |
-| artifacts-builder | 文档处理 | HTML 构建 |
 | audio-transcription | 音视频转写 | 音频转写 |
 | brave-search | AI 辅助工具 | 网页搜索 |
 | brainstorming | 思维与创意 | 头脑风暴 |
 | canvas-design | 思维与创意 | 视觉设计 |
-| critic-mentor-review | 量化金融 | 论文审稿 |
+| critic-mentor-review | 写作与润色 | 论文审稿 |
 | daily-research-papers | 研究与知识管理 | 论文速递 |
 | deep-research | 研究与知识管理 | 深度研究 |
-| doc2x | 文档处理 | PDF 转 Markdown |
 | docx | 文档处理 | Word 文档 |
 | drawio-skill | 图表与演示 | Draw.io 图表绘制 |
 | find-skills | AI 辅助工具 | 技能发现 |
@@ -758,7 +774,6 @@ python3 scripts/fetch_rss.py [hours]
 | humanizer-zh | AI 辅助工具 | AI 文本人性化 |
 | lesson | 系统与工具 | 经验存储 |
 | literature-review | 研究与知识管理 | 文献综述 |
-| markdown-to-docx | 文档处理 | Markdown 转 Word |
 | mcp-builder | AI 辅助工具 | MCP 服务器 |
 | minimax-docx | 文档处理 | Word 文档 |
 | minimax-pdf | 文档处理 | PDF 生成 |
@@ -787,8 +802,8 @@ python3 scripts/fetch_rss.py [hours]
 | visual-cognition-slides | 图表与演示 | 视觉认知设计 |
 | writing-assistant | 系统与工具 | 写作助手 |
 | xlsx | 文档处理 | Excel 处理 |
-| youtube-transcribe | 音视频转写 | YouTube 字幕 |
-| youtube-transcription | 音视频转写 | YouTube 转写 |
+| youtube-asr | 音视频转写 | YouTube 音频转写 |
+| youtube-subtitle | 音视频转写 | YouTube 字幕提取 |
 
 ---
 
@@ -839,5 +854,5 @@ metadata:（可选）
 
 ---
 
-**最后更新**: 2026-04-14
-**技能总数**: 55+
+**最后更新**: 2026-04-24
+**技能总数**: 50+

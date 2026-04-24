@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
 """
-YouTube Transcription Skill - YouTube 视频转写技能
+YouTube ASR Skill - YouTube 视频音频转写技能
 1. CDP 导出 Chrome cookies
 2. yt-dlp 下载音频
 3. ASR API 转写
 4. 保存到知识库
 
 Usage:
-    python youtube_transcription.py <youtube_url> [output_file]
-    python youtube_transcription.py <youtube_url> --save-to-obsidian
+    python youtube_asr.py <youtube_url> [output_file]
+    python youtube_asr.py <youtube_url> --save-to-obsidian
 
 Example:
-    python youtube_transcription.py https://www.youtube.com/watch?v=xxx
-    python youtube_transcription.py https://www.youtube.com/watch?v=xxx --save-to-obsidian
+    python youtube_asr.py https://www.youtube.com/watch?v=xxx
+    python youtube_asr.py https://www.youtube.com/watch?v=xxx --save-to-obsidian
 """
 
 import os
@@ -25,7 +25,7 @@ import json
 
 # API 配置
 API_BASE = "http://api.adv-ci.com:8090"
-API_TOKEN = "sk-5f8b839908d14561590b70227c72ca86"
+API_TOKEN = os.environ.get("PI_LLM_API_KEY", "")
 DEFAULT_MODEL = "Qwen/Qwen3-ASR-1.7B"
 
 # 路径配置
@@ -240,12 +240,12 @@ def cleanup(*paths):
 def main():
     """主函数"""
     if len(sys.argv) < 2:
-        print("Usage: python youtube_transcription.py <youtube_url> [output_file]")
+        print("Usage: python youtube_asr.py <youtube_url> [output_file]")
         print("Options:")
         print("  --save-to-obsidian  Save to Obsidian knowledge base")
         print("Example:")
-        print("  python youtube_transcription.py https://www.youtube.com/watch?v=xxx")
-        print("  python youtube_transcription.py https://www.youtube.com/watch?v=xxx --save-to-obsidian")
+        print("  python youtube_asr.py https://www.youtube.com/watch?v=xxx")
+        print("  python youtube_asr.py https://www.youtube.com/watch?v=xxx --save-to-obsidian")
         sys.exit(1)
     
     youtube_url = sys.argv[1]

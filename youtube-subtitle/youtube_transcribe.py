@@ -21,12 +21,14 @@ except ImportError:
 
 def extract_video_id(url: str) -> str:
     """从 YouTube URL 提取视频 ID"""
-    if 'youtu.be/' in url:
-        return url.split('youtu.be/')[-1].split('?')[0]
-    if 'watch?v=' in url:
-        return url.split('watch?v=')[-1].split('&')[0]
     if len(url) == 11:  # 直接是 ID
         return url
+
+    import re
+    match = re.search(r'(?:youtube\.com/watch\?v=|youtu\.be/|youtube\.com/shorts/|youtube\.com/embed/|youtube\.com/v/|youtube\.com/live/)([a-zA-Z0-9_-]{11})', url)
+    if match:
+        return match.group(1)
+
     return url
 
 

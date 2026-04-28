@@ -1,54 +1,106 @@
 #!/bin/bash
 # Markdown to DOCX 转换脚本
-# 使用 pandoc 将 Markdown（含 LaTeX 公式）转换为 Word DOCX 格式
+# 用法：
+#   方式 A（直接转换，pandoc）：
+#     ./md2docx.sh <input.md> [output.docx]
+#
+#   方式 B（模板转换，匹配样式）：
+#     ./md2docx.sh --template <template.docx> <input.md> [output.docx]
 
 set -e
 
-# 检查参数
-if [ $# -lt 1 ]; then
-    echo "用法：./md2docx.sh <input.md> [output.docx]"
+usage() {
+    echo "=== Markdown to DOCX 转换器 ==="
+    echo ""
+    echo "用法："
+    echo "  方式 A（直接转换）："
+    echo "    $0 <input.md> [output.docx]"
+    echo ""
+    echo "  方式 B（模板转换）："
+    echo "    $0 --template <template.docx> <input.md> [output.docx]"
     echo ""
     echo "示例:"
-    echo "  ./md2docx.sh paper.md"
-    echo "  ./md2docx.sh paper.md output.docx"
-    exit 1
+    echo "  $0 paper.md"
+    echo "  $0 paper.md output.docx"
+    echo "  $0 --template template.docx paper.md output.docx"
+    exit 0
+}
+
+if [ $# -lt 1 ] || [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
+    usage
 fi
+
+# 解析参数
+TEMPLATE=""
+while [[ "$1" == --* ]]; do
+    case "$1" in
+        --template|-t)
+            TEMPLATE="$2"
+            shift 2
+            ;;
+        *)
+            echo "未知选项：$1"
+            usage
+            ;;
+    esac
+done
 
 INPUT_FILE="$1"
 OUTPUT_FILE="${2:-${1%.md}.docx}"
 
-# 检查文件是否存在
 if [ ! -f "$INPUT_FILE" ]; then
     echo "错误：文件不存在：$INPUT_FILE"
     exit 1
 fi
 
-# 检查 pandoc 是否安装
-if ! command -v pandoc &> /dev/null; then
-    echo "错误：pandoc 未安装"
-    echo "请先安装 pandoc:"
-    echo "  Ubuntu/Debian: sudo apt install pandoc"
-    echo "  macOS: brew install pandoc"
-    echo "  或访问：https://pandoc.org/installing.html"
+if [ -n "$TEMPLATE" ] && [ ! -f "$TEMPLATE" ]; then
+    echo "错误：模板文件不存在：$TEMPLATE"
     exit 1
 fi
 
-echo "=== Markdown to DOCX 转换器 ==="
-echo "输入文件：$INPUT_FILE"
-echo "输出文件：$OUTPUT_FILE"
-echo ""
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-# 执行转换
-# --mathml: 使用 MathML（Word 原生支持）
-# 默认支持 $...$ 和 $$...$$ LaTeX 公式
-echo "正在转换..."
-pandoc "$INPUT_FILE" -o "$OUTPUT_FILE" --mathml
+if [ -n "$TEMPLATE" ]; then
+    # 方式 B：模板转换
+    echo "=== 方式 B：模板转换 ==="
+    echo "输入文件：$INPUT_FILE"
+    echo "参考模板：$TEMPLATE"
+    echo "输出文件：$OUTPUT_FILE"
+    echo ""
 
-if [ $? -eq 0 ]; then
+    if ! command -v python3 &> /dev/null; then
+        echo "错误：python3 未安装"
+        exit 1
+    fi
+
+    python3 "$SCRIPT_DIR/md2docx_template.py" "$INPUT_FILE" --template "$TEMPLATE" -o "$OUTPUT_FILE"
+
+else
+    # 方式 A：pandoc 直接转换
+    echo "=== 方式 A：直接转换 ==="
+    echo "输入文件：$INPUT_FILE"
+    echo "输出文件：$OUTPUT_FILE"
+    echo ""
+
+    if ! command -v pandoc &> /dev/null; then
+        echo "错误：pandoc 未安装"
+        echo "请先安装 pandoc: sudo apt install pandoc"
+        exit 1
+    fi
+
+    # 先运行 Python 脚本做公式修正
+    if command -v python3 &> /dev/null && [ -f "$SCRIPT_DIR/md2docx_converter.py" ]; then
+        python3 "$SCRIPT_DIR/md2docx_converter.py" "$INPUT_FILE" "$OUTPUT_FILE"
+    else
+        # 降级到纯 pandoc
+        echo "正在转换..."
+        pandoc "$INPUT_FILE" -o "$OUTPUT_FILE" --mathml
+    fi
+fi
+
+if [ -f "$OUTPUT_FILE" ]; then
     echo ""
     echo "✓ 转换成功：$OUTPUT_FILE"
-    echo ""
-    # 显示文件大小
     ls -lh "$OUTPUT_FILE" | awk '{print "  文件大小：" $5}'
 else
     echo "✗ 转换失败"

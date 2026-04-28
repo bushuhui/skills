@@ -63,11 +63,6 @@ python3 scripts/fetch_rss.py [hours]
 - 专有名词保留英文（如 GPT、LLM、Rust、Linux 等）
 - 如果原文摘要太短或无意义，根据标题和上下文写一句简短说明
 
-### 步骤 3：同步
-
-```bash
-bash /home/bushuhui/scripts/backup_bushuhui_webdav.sh
-```
 
 ## 注意事项
 

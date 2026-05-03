@@ -7,7 +7,7 @@ Paper Auto Review - 批量自动审稿
 1. 扫描论文目录，找出没有 review*.md 的论文
 2. 使用 pi-llm-server 将 PDF/DOCX/DOC 转成 Markdown
 3. 将 review_prompt.md + Markdown 论文传给 Bailian LLM 进行审稿
-4. 审稿结果保存为 xxx_review_draft.md
+4. 审稿结果保存为 review_draft.md（放在论文同级目录）
 
 依赖：
 - requests（用于 pi-llm-server 和 Bailian API）
@@ -18,10 +18,19 @@ from __future__ import annotations
 import argparse
 import os
 import random
+import sys
 import time
 from pathlib import Path
 
 import requests
+
+
+# Force stdout to flush after every print
+_original_print = print
+def _flush_print(*args, **kwargs):
+    _original_print(*args, **kwargs)
+    sys.stdout.flush()
+print = _flush_print
 
 # ===== 配置 =====
 PI_LLM_URL = os.environ["PI_LLM_URL"]
@@ -47,7 +56,7 @@ BAILIAN_HEADERS = {
 
 
 # ===== Step 1: 扫描待审稿论文 =====
-def scan_pending_papers(root: Path, year: str) -> list[Path]:
+def scan_pending_papers(root: Path, year: str, max_depth: int = 5) -> list[Path]:
     """找出没有 review*.md 的论文目录中的 PDF/DOCX/DOC 文件。"""
     pending = []
     base = root / year
@@ -55,22 +64,23 @@ def scan_pending_papers(root: Path, year: str) -> list[Path]:
         print(f"[WARN] 目录不存在: {base}")
         return []
 
-    for journal_dir in sorted(base.iterdir()):
-        if not journal_dir.is_dir():
+    for source_path in sorted(base.rglob("*")):
+        # 检查目录深度（相对于 year 目录）
+        relative = source_path.relative_to(base)
+        if len(relative.parts) > max_depth:
             continue
-        for paper_dir in sorted(journal_dir.iterdir()):
-            if not paper_dir.is_dir():
-                continue
-            # 检查是否已有审稿意见
-            review_files = list(paper_dir.glob("review*.md"))
-            if review_files:
-                continue
-            # 查找 PDF/DOCX/DOC 文件
-            for ext in ("*.pdf", "*.docx", "*.doc"):
-                found = list(paper_dir.glob(ext))
-                if found:
-                    pending.append(found[0])
-                    break
+        if not source_path.is_dir():
+            continue
+        # 检查是否已有审稿意见（review*.md 或 review_draft.md）
+        review_files = list(source_path.glob("review*.md")) + list(source_path.glob("review_draft.md"))
+        if review_files:
+            continue
+        # 查找 PDF/DOCX/DOC 文件
+        for ext in ("*.pdf", "*.docx", "*.doc"):
+            found = list(source_path.glob(ext))
+            if found:
+                pending.append(found[0])
+                break
     return pending
 
 
@@ -191,8 +201,8 @@ def generate_review(markdown_path: Path, review_prompt: str, review_prompt_cn: s
     # 读取 Markdown 内容
     content = markdown_path.read_text(encoding="utf-8")
 
-    # 截断过长内容（留足上下文窗口）
-    max_chars = 60000
+    # 截断过长内容（64K tokens ≈ 200K 字符，留足空间给 prompt 和输出）
+    max_chars = 200000
     if len(content) > max_chars:
         content = content[:max_chars]
         print(f"  ⚠ 论文内容过长，已截断至 {max_chars} 字符")
@@ -282,7 +292,7 @@ def run(args: argparse.Namespace) -> int:
 
     # Step 1: 扫描
     print(f"=== 扫描待审稿论文 ({year}) ===")
-    pending = scan_pending_papers(root, year)
+    pending = scan_pending_papers(root, year, args.max_depth)
     if not pending:
         print("没有发现待审稿的论文。")
         return 0
@@ -309,7 +319,7 @@ def run(args: argparse.Namespace) -> int:
                 continue
 
         # 检查是否已有审稿意见（转换完成后再次检查）
-        review_draft = source_path.parent / f"{source_path.stem}_review_draft.md"
+        review_draft = source_path.parent / "review_draft.md"
         if review_draft.exists():
             print(f"  ✓ 审稿意见已存在: {review_draft}")
             results.append({"paper": source_path, "status": "already_reviewed"})
@@ -371,6 +381,12 @@ def parse_args() -> argparse.Namespace:
         help=f"审稿 prompt 文件（默认 {REVIEW_PROMPT_PATH}）",
     )
     parser.add_argument(
+        "--max-depth",
+        type=int,
+        default=5,
+        help="论文目录最大搜索深度（默认 5）",
+    )
+    parser.add_argument(
         "--dry-run",
         action="store_true",
         help="仅扫描并列出待审稿论文，不执行转换和审稿",
@@ -383,7 +399,7 @@ if __name__ == "__main__":
 
     if args.dry_run:
         root = args.paper_root or PAPER_ROOT
-        pending = scan_pending_papers(root, args.year)
+        pending = scan_pending_papers(root, args.year, args.max_depth)
         if not pending:
             print("没有发现待审稿的论文。")
         else:

@@ -6,11 +6,15 @@ Paper Auto Review - 批量自动审稿
 流程：
 1. 扫描论文目录，找出没有 review*.md 的论文
 2. 使用 pi-llm-server 将 PDF/DOCX/DOC 转成 Markdown
-3. 将 review_prompt.md + Markdown 论文传给 Bailian LLM 进行审稿
+3. 将 review_prompt.md + Markdown 论文传给 LLM 进行审稿
 4. 审稿结果保存为 review_draft.md（放在论文同级目录）
 
 依赖：
-- requests（用于 pi-llm-server 和 Bailian API）
+- requests（用于 pi-llm-server 和 LLM API）
+
+环境变量：
+- PI_LLM_URL / PI_LLM_API_KEY: PDF 转 Markdown 服务（pi-llm-server）
+- LLM_URL / LLM_API_KEY / LLM_MODEL: 大语言模型审稿服务
 """
 
 from __future__ import annotations
@@ -33,11 +37,14 @@ def _flush_print(*args, **kwargs):
 print = _flush_print
 
 # ===== 配置 =====
+# PDF 转 Markdown 服务（pi-llm-server）
 PI_LLM_URL = os.environ["PI_LLM_URL"]
 PI_LLM_API_KEY = os.environ["PI_LLM_API_KEY"]
-BAILIAN_URL = os.environ["BAILIAN_URL"]
-BAILIAN_API_KEY = os.environ["BAILIAN_API_KEY"]
-BAILIAN_MODEL = os.environ["BAILIAN_MODEL"]
+
+# 大语言模型审稿服务
+LLM_URL = os.environ["LLM_URL"]
+LLM_API_KEY = os.environ["LLM_API_KEY"]
+LLM_MODEL = os.environ["LLM_MODEL"]
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 PAPER_ROOT = Path(
@@ -49,8 +56,8 @@ REVIEW_PROMPT_CN_PATH = SCRIPT_DIR / "review_prompt_cn.md"
 PI_LLM_HEADERS = {
     "Authorization": f"Bearer {PI_LLM_API_KEY}",
 }
-BAILIAN_HEADERS = {
-    "Authorization": f"Bearer {BAILIAN_API_KEY}",
+LLM_HEADERS = {
+    "Authorization": f"Bearer {LLM_API_KEY}",
     "Content-Type": "application/json",
 }
 
@@ -190,10 +197,10 @@ def parse_to_markdown(source_path: Path) -> Path | None:
     return None
 
 
-# ===== Step 3: 调用 Bailian LLM 审稿 =====
+# ===== Step 3: 调用 LLM 审稿 =====
 def generate_review(markdown_path: Path, review_prompt: str, review_prompt_cn: str) -> str | None:
     """
-    将 review_prompt + 论文 Markdown 内容发给 Bailian LLM，
+    将 review_prompt + 论文 Markdown 内容发给 LLM，
     返回审稿意见。
     """
     print(f"  → 正在生成审稿意见...")
@@ -231,7 +238,7 @@ def generate_review(markdown_path: Path, review_prompt: str, review_prompt_cn: s
     session.trust_env = False
 
     payload = {
-        "model": BAILIAN_MODEL,
+        "model": LLM_MODEL,
         "messages": [
             {"role": "system", "content": system_msg},
             {"role": "user", "content": user_message},
@@ -242,8 +249,8 @@ def generate_review(markdown_path: Path, review_prompt: str, review_prompt_cn: s
 
     try:
         resp = session.post(
-            f"{BAILIAN_URL}/chat/completions",
-            headers=BAILIAN_HEADERS,
+            f"{LLM_URL}/chat/completions",
+            headers=LLM_HEADERS,
             json=payload,
             timeout=300,
         )

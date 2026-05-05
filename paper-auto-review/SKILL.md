@@ -1,6 +1,6 @@
 ---
 name: paper-auto-review
-description: 自动审稿工具：扫描论文目录，使用 pi-llm-server 转 Markdown，调用 Bailian LLM 生成审稿意见。Use when the user requests paper review, automatic review, or mentions paper review directory.
+description: 自动审稿工具：扫描论文目录，使用 pi-llm-server 转 Markdown，调用 LLM 生成审稿意见。Use when the user requests paper review, automatic review, or mentions paper review directory.
 ---
 
 # Paper Auto Review Skill
@@ -59,13 +59,32 @@ python3 paper_auto_review.py --year 2026 --max-depth 5
 - 已有 `review_draft.md` 的论文跳过审稿步骤
 - 论文内容截断上限：200,000 字符（约 64K tokens，适配 qwen3.6-plus 的 128K 上下文窗口）
 
-### 5. 推荐使用子 agent 执行
+### 5. 使用 run_review.sh 加载环境变量
+脚本依赖 5 个环境变量（`PI_LLM_URL`、`PI_LLM_API_KEY`、`LLM_URL`、`LLM_API_KEY`、`LLM_MODEL`）。使用 `run_review.sh` 自动加载：
+```bash
+bash run_review.sh --year 2026          # 执行审稿
+bash run_review.sh --year 2026 --dry-run # 预览待审列表
+```
+该脚本硬编码了正确的 API 地址和 Token，无需手动设置环境变量。
+
+### 6. 推荐使用子 agent 执行
 审稿耗时较长（每篇 3-10 分钟），建议 spawn 子 agent 避免占用 main session。
 
-### 6. 完成后汇总
+### 7. 完成后汇总
 报告每篇论文的审稿状态（成功/失败/跳过）、输出文件路径。
 
 ## 常见坑
+
+### 0. API Key 过期导致 HTTP 401
+LLM_API_KEY 或 PI_LLM_API_KEY 可能过期（返回 `invalid_api_key` 或 `Invalid authentication token`）。
+**诊断**：`paper_auto_review.py` 报错 `HTTP 401`。
+**解决方案**：
+1. 更新 `run_review.sh` 中对应的 API Key
+2. 如果 key 暂时无法更新，跳过自动审稿流程，**直接阅读论文 Markdown 文件后用自身模型能力撰写审稿意见**（保存到 `review_draft.md`）：
+   - 先用 pi-llm-server 将 PDF 转为 Markdown（OCR 服务使用独立的 PI_LLM_API_KEY）
+   - 读取 `.md` 文件内容
+   - 按 `review_prompt_cn.md`（中文论文）或 `review_prompt.md`（英文论文）的结构撰写审稿意见
+   - 输出到论文目录下的 `review_draft.md`
 
 ### 1. `patch` 工具对 `.py` 文件可能静默失败
 修改脚本代码时，`patch` 操作可能报告 `success: true` 但文件内容实际未变。
@@ -93,13 +112,13 @@ python3 paper_auto_review.py --year 2026 --max-depth 5
 ## 依赖
 - Python 3 + requests
 - pi-llm-server 服务（用于文档转 Markdown）
-- Bailian LLM API（用于生成审稿意见）
+- LLM API（用于生成审稿意见）
 
 ## 环境变量
 | 变量 | 默认值 | 说明 |
 |------|--------|------|
-| `PI_LLM_URL` | `http://api.adv-ci.com:8090/v1` | pi-llm-server 地址 |
+| `PI_LLM_URL` | `http://api.adv-ci.com:8090/v1` | pi-llm-server OCR 服务地址 |
 | `PI_LLM_API_KEY` | `sk-5f8b...` | pi-llm-server 认证 |
-| `BAILIAN_URL` | `https://coding.dashscope.aliyuncs.com/v1` | Bailian API 地址 |
-| `BAILIAN_API_KEY` | `sk-sp-67ea...` | Bailian 认证 |
-| `BAILIAN_MODEL` | `qwen3.6-plus` | Bailian 模型 |
+| `LLM_URL` | `http://api.adv-ci.com/v1` | 大语言模型 API 地址 |
+| `LLM_API_KEY` | `sk-lga9...` | 大语言模型认证 |
+| `LLM_MODEL` | `openai_code` | 审稿使用的模型名称 |

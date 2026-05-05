@@ -40,6 +40,15 @@ Swagger:  http://api.adv-ci.com:8090/docs
 python scripts/pi_llm_server_skill.py <transcribe|parse|embed|rerank|status> [参数]
 ```
 
+**长音频专用**（>10 分钟）:
+```bash
+python scripts/split_transcribe.py audio.mp3 [段长度_秒]
+```
+
+## 参考文档
+
+- **B站音频处理**: `references/bilibili-audio-notes.md`
+
 ## 支持的文件格式
 
 | 类型 | 扩展名 | 处理流程 |
@@ -91,8 +100,47 @@ Markdown 中的图片路径自动修正为 `document_images/xxx.png`。
 | **Excel** | 每个 sheet 转为一个表格，sheet 名作为标题 |
 | **扫描件/图片** | 保留 OCR 原文，不确定字符用 `[?]` 标记 |
 
+## ⚠️ 长音频处理（ASR 超时陷阱）
+
+**问题**: `Qwen/Qwen3-ASR-1.7B` 模型对 **>20 分钟的音频** 经常超时（API 默认 600s 不够用）。
+**实测**: 60 分钟音频（51MB）连续转写必然超时。
+
+**正确做法 — 分段转写**:
+
+1. **用 FFmpeg 切片**（推荐 5 分钟一段，兼顾速度和成功率）:
+```bash
+ffmpeg -y -i audio.mp3 -f segment -segment_time 300 -c copy out/part_%03d.mp3
+```
+
+2. **逐段提交 ASR API**，每段超时设为 1800s:
+```python
+import requests, glob, os
+
+API_URL = 'http://api.adv-ci.com:8090/v1/audio/transcriptions'
+API_KEY = 'sk-5f8b839908d14561590b70227c72ca86'
+session = requests.Session()
+session.trust_env = False
+
+full_text = []
+for part in sorted(glob.glob('out/part_*.mp3')):
+    with open(part, 'rb') as f:
+        r = session.post(API_URL,
+            headers={'Authorization': f'Bearer {API_KEY}'},
+            files={'file': (os.path.basename(part), f, 'audio/mpeg')},
+            data={'model': 'Qwen/Qwen3-ASR-1.7B'},
+            timeout=1800)
+    if r.status_code == 200:
+        full_text.append(r.json().get('text', ''))
+
+with open('transcript.txt', 'w', encoding='utf-8') as f:
+    f.write('\n\n---\n\n'.join(full_text))
+```
+
+3. **参考脚本**: `scripts/split_transcribe.py` — 一键分割+转写
+
 ## 注意事项
 
 - **代理**: 必须 `session.trust_env = False` 禁用系统代理
-- **超时**: ASR 600s / OCR 1800s / Embedding 60s / Rerank 120s
+- **超时**: ASR 600s（短音频）/ 1800s（长音频分段）/ OCR 1800s / Embedding 60s / Rerank 120s
 - **文件大小**: 音频 <100MB, 文档 <50MB
+- **B站字幕**: yt-dlp 默认无法下载字幕（需要登录），必须先下载音频再 ASR 转写

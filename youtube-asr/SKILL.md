@@ -5,16 +5,17 @@ description: YouTube 视频音频自动转写技能。使用 CDP 导出 Chrome c
 
 ## 技能描述
 
-**功能**: 自动下载 YouTube 视频音频并转写为文字
+**功能**: 自动下载视频音频并转写为文字
 
-**流程**:
-1. CDP 导出 Chrome cookies（Netscape 格式）
-2. yt-dlp 下载音频（带 cookies + JS runtime）
-3. 调用 ASR API 转写（Qwen/Qwen3-ASR-1.7B）
-4. 保存结果到知识库
+**支持平台**: YouTube、Bilibili
+
+**通用流程**:
+1. yt-dlp 下载音频（YouTube 需要 cookies，Bilibili 通常不需要）
+2. 调用 ASR API 转写（Qwen/Qwen3-ASR-1.7B）
+3. 保存结果到知识库
 
 **适用场景**:
-- YouTube 教程视频转文字
+- 教程视频转文字
 - 会议录像整理
 - 播客内容归档
 - 外语视频中文字幕
@@ -122,7 +123,27 @@ python youtube_asr.py https://www.youtube.com/watch?v=xxx /path/to/output.txt
 
 缺少这些参数会导致 `403 Forbidden`、`n parameter` 错误、`PO Token` 错误。
 
-### 代理配置
+### Bilibili
+
+B站视频使用相同音频转写流程，但有不同特点：
+
+```bash
+# 1. yt-dlp 下载音频（B站无需 cookies 即可下载音频）
+yt-dlp -x --audio-format mp3 -o "output.%(ext)s" "https://www.bilibili.com/video/BVxxxxx/"
+
+# 2. 字幕获取
+# B站字幕需要登录态（cookies），否则 yt-dlp 会跳过字幕
+# 推荐方案：直接下载音频 → ASR 转写（不依赖平台字幕）
+```
+
+**B站特有问题**：
+- yt-dlp 下载音频无需 cookies，但字幕需要登录
+- `--write-sub --all-subs` 在无 cookies 时只会下载弹幕（danmaku.xml）
+- B站 API 字幕接口 `api.bilibili.com/x/player/v2?cid=<cid>&bvid=<bvid>` 可能超时
+- 短链接 `b23.tv/xxx` 需先通过浏览器访问获取真实 BV 号
+- **最佳实践**：浏览器打开页面获取信息 → yt-dlp 下载音频 → pi-llm-server ASR 转写
+
+详见 `references/bilibili-asr-notes.md`。
 
 ASR API 调用必须禁用代理：
 ```python
@@ -132,9 +153,7 @@ session.trust_env = False
 
 ### 超时设置
 
-```python
-timeout=600  # 10 分钟超时，长视频需要较长时间
-```
+ASR API 短音频 `timeout=600`，**长音频（>10 分钟）不应直接调用 API**，应使用 `pi-llm-server` 的 `split_transcribe.py` 分段转写（详见 pi-llm-server skill）。
 
 ### 临时文件
 
@@ -159,7 +178,7 @@ yt-dlp 缺少 JS runtime，确保参数 `--js-runtimes node --remote-components 
 ASR API Token 无效。检查环境变量 `YOUTUBE_ASR_API_TOKEN`。
 
 ### 转写超时
-视频太长，增加 `timeout` 值或使用更短片段。
+视频太长。**长音频（>20 分钟）直接调用 API 必定超时。** 使用 `split_transcribe.py` 分段转写（详见 pi-llm-server skill）。
 
 ---
 

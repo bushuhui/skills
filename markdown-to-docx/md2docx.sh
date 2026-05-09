@@ -60,6 +60,20 @@ fi
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
+# === 新增：Markdown 格式检查与修复 ===
+if command -v python3 &> /dev/null && [ -f "$SCRIPT_DIR/md_fixer.py" ]; then
+    echo "=== Markdown 格式检查 ==="
+    python3 "$SCRIPT_DIR/md_fixer.py" "$INPUT_FILE"
+    
+    # 如果修复生成了 _format_fixed.md，使用修复后的文件
+    FIXED_FILE="${INPUT_FILE%.md}_format_fixed.md"
+    if [ -f "$FIXED_FILE" ]; then
+        echo "使用修复后的文件进行转换：$FIXED_FILE"
+        INPUT_FILE="$FIXED_FILE"
+    fi
+    echo ""
+fi
+
 if [ -n "$TEMPLATE" ]; then
     # 方式 B：模板转换
     echo "=== 方式 B：模板转换 ==="

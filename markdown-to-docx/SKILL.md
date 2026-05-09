@@ -1,6 +1,6 @@
 ---
 name: markdown-to-docx
-description: 将 Markdown 文件转换为 Word DOCX 格式。支持两种模式：直接转换（pandoc，适合含 LaTeX 公式的学术论文）和模板转换（python-docx 匹配参考模板样式，适合公文/技术方案/报告等需要严格格式的场景）。
+description: 将 Markdown 文件转换为 Word DOCX 格式。内置自动格式检查修复（HTML 表格、分隔行、图片引用），支持两种模式：直接转换（pandoc，适合含 LaTeX 公式的学术论文）和模板转换（python-docx 匹配参考模板样式，适合公文/技术方案/报告等需要严格格式的场景）。
 ---
 
 # markdown-to-docx
@@ -177,11 +177,26 @@ python3 md2docx_template.py input.md --template template.docx -o output_template
 
 ---
 
+## 自动格式检查与修复（新增）
+
+**在转换前自动运行 `md_fixer.py`**，检测并修复以下非标准 Markdown 格式：
+
+| 修复项 | 修复前 | 修复后 |
+|--------|--------|--------|
+| HTML 表格 | `<table><tr><td>...</td></tr></table>` | `\| 列1 \| 列2 \|` |
+| 非标准分隔行 | `\|\|-\|\|\|-\|` | `\|---\|---\|---\|` |
+| 图片路径检查 | 引用不存在的路径 | ⚠ 警告报告 |
+
+**使用方式**：直接调用 `md2docx.sh`，格式检查自动执行。
+
+---
+
 ## 文件清单
 
 | 文件 | 用途 |
 |------|------|
-| `md2docx.sh` | Shell 脚本 — pandoc 快速转换 |
+| `md2docx.sh` | Shell 脚本 — 入口脚本（含自动格式检查） |
+| `md_fixer.py` | Python 脚本 — Markdown 格式检查与修复器 |
 | `md2docx_converter.py` | Python 脚本 — 含公式修正的 pandoc 转换 |
 | `md2docx_template.py` | Python 脚本 — 模板样式匹配转换 |
 | `skill.md` | 本文档 |

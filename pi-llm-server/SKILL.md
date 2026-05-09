@@ -40,6 +40,8 @@ Swagger:  http://api.adv-ci.com:8090/docs
 python scripts/pi_llm_server_skill.py <transcribe|parse|embed|rerank|status> [参数]
 ```
 
+输出目录固定为**源文件所在目录**，不支持自定义输出路径。
+
 **长音频专用**（>10 分钟）:
 ```bash
 python scripts/split_transcribe.py audio.mp3 [段长度_秒]
@@ -140,6 +142,7 @@ with open('transcript.txt', 'w', encoding='utf-8') as f:
 
 ## 注意事项
 
+- **`parse` 不支持 `--output` 参数**：输出目录始终为源文件所在目录，不可自定义
 - **代理**: 必须 `session.trust_env = False` 禁用系统代理
 - **超时**: ASR 600s（短音频）/ 1800s（长音频分段）/ OCR 1800s / Embedding 60s / Rerank 120s
 - **文件大小**: 音频 <100MB, 文档 <50MB

@@ -102,6 +102,39 @@ Markdown 中的图片路径自动修正为 `document_images/xxx.png`。
 | **Excel** | 每个 sheet 转为一个表格，sheet 名作为标题 |
 | **扫描件/图片** | 保留 OCR 原文，不确定字符用 `[?]` 标记 |
 
+## ⚠️ ASR 批量转写 Hang 检测
+
+**问题**: `pi_llm_server_skill.py transcribe` 在**批量连续调用**时，部分 chunk 会**无限期 hang** — 无 stdout 输出、无 stderr、文件不生成。健康检查显示 ASR "healthy"（延迟 ~9ms），但实际转录请求卡死。
+
+**实测表现**（78 分钟音频，40 个 2 分钟 chunk）：
+- chunk_000~009 正常，每段 ~3-6 秒
+- chunk_010 30s timeout 失败，60s 重试成功（721 字符）
+- chunk_012 30s timeout 失败，60s 重试成功
+- chunk_020 30s timeout 失败
+- chunk_013~039 部分 hang 超 120s 仍无输出
+- **规律**: 连续调用 10-15 段后开始不稳定，hang 概率递增
+
+**根因**: 服务端的 ASR 模型推理队列可能阻塞，健康检查只探测端口连通性（~9ms），不验证推理能力。
+
+**正确做法**:
+1. **每段必须加 timeout 包裹**（最低 60s，推荐 180s）
+2. **失败后重试一次**，部分 hang 段在重试时可恢复
+3. **逐段执行，不要用 `subprocess.run` 的 pipe 或批量循环**，每个 chunk 独立的 `timeout` 命令最可靠
+
+```bash
+# 可靠方案：用 shell timeout 包裹每次调用
+for chunk in /tmp/audio_chunks/chunk_*.mp3; do
+    name=$(basename "$chunk" .mp3)
+    txt="/tmp/audio_chunks/${name}.txt"
+    [ -f "$txt" ] && continue
+    timeout 180 python3 /home/bushuhui/.agents/skills/pi-llm-server/scripts/pi_llm_server_skill.py transcribe "$chunk" 2>&1
+    [ -f "$txt" ] && echo "[$name] OK" || echo "[$name] FAILED, retrying..." && \
+    timeout 180 python3 /home/bushuhui/.agents/skills/pi-llm-server/scripts/pi_llm_server_skill.py transcribe "$chunk" 2>&1
+done
+```
+
+4. **完全卡死时**：SSH 到 tiger 服务器检查 ASR 服务状态，必要时重启 `asr_server.py`
+
 ## ⚠️ 长音频处理（ASR 超时陷阱）
 
 **问题**: `Qwen/Qwen3-ASR-1.7B` 模型对 **>20 分钟的音频** 经常超时（API 默认 600s 不够用）。

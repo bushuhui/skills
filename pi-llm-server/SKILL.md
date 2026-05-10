@@ -55,7 +55,7 @@ python scripts/split_transcribe.py audio.mp3 [段长度_秒]
 
 | 类型 | 扩展名 | 处理流程 |
 |------|--------|----------|
-| PDF | `.pdf` | 直接解析 |
+| PDF | `.pdf` | 直接解析；加密 PDF 自动 Ghostscript 解密后提交 OCR |
 | 图片 | `.jpg`, `.jpeg`, `.png` | 转 PDF → 解析 |
 | Word | `.docx`, `.doc` | libreoffice 转 PDF → 解析 |
 | PPT | `.pptx`, `.ppt` | libreoffice 转 PDF → 解析 |
@@ -172,6 +172,21 @@ with open('transcript.txt', 'w', encoding='utf-8') as f:
 ```
 
 3. **参考脚本**: `scripts/split_transcribe.py` — 一键分割+转写
+
+## ⚠️ 加密 PDF 自动处理
+
+**机制**: `parse` 命令已内置加密 PDF 自动检测与解密流程，无需手动预处理。
+
+**流程**:
+1. **检测**: 使用 `pdfinfo`（回退到 `grep /Encrypt`）检测 PDF 是否加密
+2. **备份**: 原始加密文件重命名为 `{原名}_ori.pdf` 保留备份
+3. **解密**: Ghostscript 生成解密后的文件到原始文件名 `{原名}.pdf`
+4. **OCR**: 用解密后的文件提交 MinerU 解析，输出文件名天然一致
+5. **输出**: `{原名}.md` + `{原名}_images/` + `{原名}_ori.pdf`（原始加密备份）
+
+**用户侧零操作**，直接 `python pi_llm_server_skill.py parse encrypted.pdf` 即可。
+
+**⚠️ 图片路径注意**: 如果 Ghostscript 解密生成的临时文件名与原文件名不同，OCR 输出的 Markdown 中图片引用路径可能不匹配。脚本会在输出时自动修正为 `{原文件名}_images/xxx.png` 格式。
 
 ## 注意事项
 

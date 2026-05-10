@@ -7,7 +7,7 @@ description: YouTube 视频音频自动转写技能。使用 CDP 导出 Chrome c
 
 **功能**: 自动下载视频音频并转写为文字
 
-**支持平台**: YouTube、Bilibili
+**支持平台**: YouTube、Bilibili、小红书 (Xiaohongshu / xhslink.com)
 
 **通用流程**:
 1. yt-dlp 下载音频（YouTube 需要 cookies，Bilibili 通常不需要）
@@ -122,6 +122,26 @@ python youtube_asr.py https://www.youtube.com/watch?v=xxx /path/to/output.txt
 ```
 
 缺少这些参数会导致 `403 Forbidden`、`n parameter` 错误、`PO Token` 错误。
+
+### 小红书 (Xiaohongshu / xhslink.com)
+
+小红书视频通过 xhslink.com 短链接分享。**yt-dlp 直接支持，无需 cookies**：
+
+```bash
+# 1. yt-dlp 下载视频（自动跟随短链接重定向）
+yt-dlp "http://xhslink.com/o/XXXXX"
+
+# 2. 提取音频
+ffmpeg -y -i video.mp4 -q:a 0 -map a audio.mp3
+
+# 3. ASR 转写
+python3 scripts/pi_llm_server_skill.py transcribe "audio.mp3"
+```
+
+**注意**：
+- xhslink.com 短链接会自动重定向到 xiaohongshu.com，yt-dlp 能正确识别并提取视频
+- 无需 cookies 或登录态
+- 如果链接是完整 xiaohongshu.com URL 而非短链接，CDP 浏览器会报 "IP at risk" 错误 → 此时尝试用 yt-dlp 直接下载，或注明平台限制
 
 ### Bilibili
 

@@ -20,6 +20,7 @@ PI-LLM-Server Skill - 统一 LLM 服务网关
 import os
 import sys
 import json
+import subprocess
 import requests
 import zipfile
 import tempfile
@@ -118,12 +119,63 @@ def transcribe_audio_cmd(audio_path, model="Qwen/Qwen3-ASR-1.7B"):
     print(f"  长度：{len(text)} 字符")
 
 
+def _is_pdf_encrypted(pdf_path):
+    """检测 PDF 是否加密。返回 (is_encrypted, detail)。"""
+    try:
+        result = subprocess.run(
+            ['pdfinfo', pdf_path],
+            capture_output=True, text=True, timeout=30
+        )
+        # pdfinfo 返回码 3 表示加密，也会在 stdout 中显示 "Encrypted: yes"
+        if result.returncode == 3:
+            return True, 'pdfinfo: encrypted (exit code 3)'
+        for line in result.stdout.splitlines():
+            if line.strip().lower().startswith('encrypted:') and 'yes' in line.lower():
+                return True, f'pdfinfo: {line.strip()}'
+        return False, 'not encrypted'
+    except FileNotFoundError:
+        # pdfinfo 不可用，回退到 grep 检查
+        try:
+            result = subprocess.run(
+                ['grep', '-c', '/Encrypt', pdf_path],
+                capture_output=True, text=True, timeout=10
+            )
+            if result.returncode == 0 and int(result.stdout.strip()) > 0:
+                return True, 'grep /Encrypt: found'
+            return False, 'not encrypted (grep fallback)'
+        except Exception as e:
+            return False, f'check failed: {e}'
+
+
+def _decrypt_pdf_with_gs(input_path, output_path):
+    """用 Ghostscript 解密/去权限 PDF。"""
+    try:
+        result = subprocess.run(
+            ['gs', '-q', '-dNOPAUSE', '-dBATCH', '-sDEVICE=pdfwrite',
+             '-sOutputFile=' + output_path, input_path],
+            capture_output=True, text=True, timeout=120
+        )
+        if result.returncode == 0 and os.path.exists(output_path):
+            orig_size = os.path.getsize(input_path)
+            new_size = os.path.getsize(output_path)
+            print(f"  ✓ Ghostscript 解密完成: {orig_size:,} → {new_size:,} bytes")
+            return True
+        else:
+            print(f"  ✗ Ghostscript 解密失败 (exit {result.returncode}): {result.stderr}")
+            return False
+    except Exception as e:
+        print(f"  ✗ Ghostscript 解密异常: {e}")
+        return False
+
+
 def parse_document_cmd(file_path, backend="pipeline"):
     """
     文档解析命令行
     输出到源文件所在目录:
         /path/to/document.md
         /path/to/document_images/
+    
+    加密 PDF 自动处理：检测 → 备份原始为 _ori.pdf → Ghostscript 解密 → 提交 OCR
     """
     import shutil
     import re
@@ -135,6 +187,26 @@ def parse_document_cmd(file_path, backend="pipeline"):
     base_name = os.path.splitext(file_name)[0]
     src_dir = os.path.dirname(os.path.abspath(file_path))
     print(f"Parsing {file_name}...")
+
+    # ── 加密 PDF 自动处理 ──
+    if file_path.lower().endswith('.pdf'):
+        is_enc, detail = _is_pdf_encrypted(file_path)
+        if is_enc:
+            print(f"  ⚠ 检测到加密 PDF: {detail}")
+            # 重命名原始加密文件为 _ori.pdf 备份
+            backup_path = os.path.join(src_dir, f"{base_name}_ori.pdf")
+            if not os.path.exists(backup_path):
+                os.rename(file_path, backup_path)
+                print(f"  → 原始文件备份为: {os.path.basename(backup_path)}")
+                file_path = backup_path
+            # Ghostscript 解密，输出到原始文件名
+            decrypted_path = os.path.join(src_dir, file_name)
+            if not _decrypt_pdf_with_gs(file_path, decrypted_path):
+                print(f"  ✗ 解密失败，尝试直接提交原始文件（可能报错）")
+                file_path = backup_path
+            else:
+                file_path = decrypted_path
+                print(f"  → 解密完成: {os.path.basename(file_path)}")
 
     files = {'files': (file_name, open(file_path, 'rb'), 'application/octet-stream')}
     data = {

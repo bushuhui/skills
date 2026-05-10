@@ -1210,6 +1210,11 @@ graphify claude uninstall  # remove the section
 
 ---
 
+## Related Knowledge Tools
+
+- **HyperExtract** — LLM-driven text-to-knowledge extraction CLI with YAML templates and 80+ presets. Better for single-document knowledge extraction (entities, relations, timelines). See `references/hyperextract.md`.
+- Graphify is better for codebase understanding, cross-document community detection, and graph-based query.
+
 ## Honesty Rules
 
 - Never invent an edge. If unsure, use AMBIGUOUS.

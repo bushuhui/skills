@@ -94,6 +94,14 @@ npx skills add <owner/repo@skill> -g -y
 
 The `-g` flag installs globally (user-level) and `-y` skips confirmation prompts.
 
+**⚠️ Pitfall**: `npx skills add` may complete cloning but fail to register the skill in the correct directory (especially for skills not on the skills.sh registry, or when the interactive agent selection step times out). If the installed skill doesn't appear after `npx skills add`, fall back to manual git clone:
+
+```bash
+git clone https://github.com/<owner>/<repo>.git ~/.agents/skills/<skill-name>
+```
+
+The skill will be loaded automatically on next session. Verify with `ls ~/.agents/skills/<skill-name>/SKILL.md`.
+
 ## Common Skill Categories
 
 When searching, consider these common categories:

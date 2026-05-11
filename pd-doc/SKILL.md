@@ -1,10 +1,10 @@
 ---
-name: pd_doc
+name: pd-doc
 description: 基于文档索引的迭代开发 — 项目文档自动管理与增量更新。Use when starting a new project needing docs/, updating existing project documentation, or after code changes to incrementally update docs/architecture.md, docs/api.md, docs/changelog.md.
-trigger: /pd_doc
+trigger: /pd-doc
 ---
 
-# /pd_doc
+# /pd-doc
 
 基于文档索引的迭代开发工作流：自动管理项目文档，新建项目创建文档骨架，已有项目增量更新。
 

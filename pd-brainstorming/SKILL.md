@@ -1,10 +1,10 @@
 ---
-name: pd_brainstorming
+name: pd-brainstorming
 description: 深度头脑风暴 + 设计追问 — 把模糊想法变成完整设计方案。Use when 分析需求、规划任务、讨论设计方案、需要把想法想透想彻底、或者用户提到 brainstorming/头脑风暴/grill me。最终方案保存到 docs/rad.md。
-trigger: /pd_brainstorming
+trigger: /pd-brainstorming
 ---
 
-# /pd_brainstorming
+# /pd-brainstorming
 
 融合渐进式设计（brainstorming）与深度追问（grill-me），把模糊想法变成经过充分推敲的完整设计方案，并记录到 `docs/rad.md`。
 

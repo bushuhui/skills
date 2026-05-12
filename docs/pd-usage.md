@@ -4,6 +4,7 @@ PI-Dev 是一套覆盖**从想法到交付**全链路的工程化 Skill，围绕
 
 具体的使用示例，可以参考 [uav-planning](https://gitee.com/pi-lab/learn_programming/tree/master/demo_code/2_uav-planning)
 
+本项目部分的 skills 来自 [mattpocock skills](https://github.com/mattpocock/skills)
 
 ---
 

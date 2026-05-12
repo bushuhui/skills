@@ -80,12 +80,24 @@ async function discoverChromePort() {
     } catch { /* 文件不存在，继续 */ }
   }
 
-  // 2. 扫描常用端口
+  // 2. 扫描常用端口 + 从 /json/version 获取完整 WebSocket 路径（带 UUID）
   const commonPorts = [9222, 9229, 9333];
   for (const port of commonPorts) {
     const ok = await checkPort(port);
     if (ok) {
-      console.log(`[CDP Proxy] 扫描发现 Chrome 调试端口: ${port}`);
+      try {
+        const resp = await fetch(`http://127.0.0.1:${port}/json/version`);
+        const data = await resp.json();
+        if (data.webSocketDebuggerUrl) {
+          const wsPath = new URL(data.webSocketDebuggerUrl).pathname;
+          console.log(`[CDP Proxy] 扫描发现 Chrome 调试端口: ${port} (wsPath: ${wsPath})`);
+          return { port, wsPath };
+        }
+      } catch (e) {
+        console.error(`[CDP Proxy] 获取 /json/version 失败: ${e.message}`);
+      }
+      // 兜底：如果 /json/version 不可用，返回 null（向后兼容）
+      console.log(`[CDP Proxy] 扫描发现 Chrome 调试端口: ${port}（无 wsPath）`);
       return { port, wsPath: null };
     }
   }

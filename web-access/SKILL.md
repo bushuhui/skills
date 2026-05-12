@@ -253,4 +253,5 @@ updated: 2026-03-19
 | 文件 | 何时加载 |
 |------|---------|
 | `references/cdp-api.md` | 需要 CDP API 详细参考、JS 提取模式、错误处理时 |
+| `references/content-extraction.md` | 动态页面正文提取策略（多选择器试探 + 最长文本回退） |
 | `references/site-patterns/{domain}.md` | 确定目标网站后，读取对应站点经验 |

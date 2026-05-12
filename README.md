@@ -71,9 +71,12 @@ skills:
 | 📝 写作与润色 | 4 | 论文审稿、AI 文本人性化、文献综述、Markdown 转 Word | [查看详情](docs/README_Detail.md#写作与润色) |
 | 🎨 图表与演示 | 5 | 流程图、HTML 幻灯片、技术架构图、视觉认知设计 | [查看详情](docs/README_Detail.md#图表与演示) |
 | ⚙️ 系统与工具 | 7 | 项目管理、技能开发、自动审稿、tmux、优化 | [查看详情](docs/README_Detail.md#系统与工具) |
+| 🛠️ PI-Dev 工程化 | 14 | 从想法到交付的全链路开发流程：设计追问、PRD 拆分、TDD、原型验证、架构审计等 | [查看详情](docs/pd-usage.md) |
 
-共计 **57** 个 skill（其中 3 个为跨分类交叉引用）。
+共计 **71** 个 skill（其中 3 个为跨分类交叉引用）。
 
 ## 详细文档
 
 每个 skill 的目的、用途、用法详见 → [docs/README_Detail.md](docs/README_Detail.md)
+
+

@@ -1,6 +1,6 @@
 # PI-Dev Skills 使用指南
 
-本文档是 `pd-*` 系列 Skill 的完整使用手册，涵盖全链路开发流程中每个 Skill 的目的、用途、用法和相互关系。
+PI-Dev 是一套覆盖**从想法到交付**全链路的工程化 Skill，围绕"先想清楚、再验证、后执行"的理念设计。本文档是 `pd-*` 系列 Skill 的完整使用手册，涵盖全链路开发流程中每个 Skill 的目的、用途、用法和相互关系。
 
 ---
 
@@ -691,6 +691,31 @@ docs/
 **适用场景**: 接手新代码区域、理解模块间依赖、排查不熟悉的问题
 
 ---
+
+## 四、Skill列表
+
+| 阶段 | Skill | 一句话 |
+|------|-------|--------|
+| 需求设计 | `/pd-brainstorming` | 深度设计追问，产出完整方案 |
+| 需求设计 | `/pd-grill-with-docs` | 用领域模型和 ADR 压力测试方案 |
+| 需求设计 | `/pd-bdd` | Given-When-Then 行为描述，与 TDD 双保险 |
+| 规划拆分 | `/pd-to-prd` | 合成结构化 PRD 并发布 |
+| 规划拆分 | `/pd-to-issues` | 按垂直切片拆分为独立 issue |
+| 规划拆分 | `/pd-triage` | Issue 状态机管理 |
+| 验证执行 | `/pd-prototype` | 可丢弃原型验证关键决策 |
+| 验证执行 | `/pd-tdd` | 测试驱动开发 |
+| 验证执行 | `/pd-diagnose` | 系统化排错循环 |
+| 验证执行 | `/pd-execution` | 批量执行已规划的 issue |
+| 质量架构 | `/pd-improve-codebase-architecture` | 发现架构摩擦，深化模块 |
+| 质量架构 | `/pd-rules-check` | 基于 14 套经典书籍的代码审计 |
+| 文档辅助 | `/pd-doc` | 项目文档自动管理 |
+| 文档辅助 | `/pd-setup` | 初始化工程 Skill 配置 |
+| 文档辅助 | `/pd-zoom-out` | 拉高视角理解全局 |
+
+
+---
+
+
 
 ## 附录：Skill 交叉关系
 

@@ -1,12 +1,12 @@
 ---
 name: pd-brainstorming
-description: 深度头脑风暴 + 设计追问 — 把模糊想法变成完整设计方案。Use when 分析需求、规划任务、讨论设计方案、需要把想法想透想彻底、或者用户提到 brainstorming/头脑风暴/grill me。最终方案保存到 docs/rad.md。
+description: 深度头脑风暴 + 设计追问 — 把模糊想法变成完整设计方案。Use when 分析需求、规划任务、讨论设计方案、需要把想法想透想彻底、或者用户提到 brainstorming/头脑风暴/grill me。最终方案保存到 docs/RAD.md。
 trigger: /pd-brainstorming
 ---
 
 # /pd-brainstorming
 
-融合渐进式设计（brainstorming）与深度追问（grill-me），把模糊想法变成经过充分推敲的完整设计方案，并记录到 `docs/rad.md`。
+融合渐进式设计（brainstorming）与深度追问（grill-me），把模糊想法变成经过充分推敲的完整设计方案，并记录到 `docs/RAD.md`。
 
 ## 工作流程
 
@@ -45,10 +45,10 @@ trigger: /pd-brainstorming
 
 ### 阶段 5：确认并保存方案
 
-用户确认设计方案后，将完整方案保存到 `docs/rad.md`：
+用户确认设计方案后，将完整方案保存到 `docs/RAD.md`：
 
 - 如果 `docs/` 不存在则创建
-- 如果 `docs/rad.md` 不存在则创建
+- 如果 `docs/RAD.md` 不存在则创建
 - **按时间倒序追加**，每次记录为一个独立 section：
 
 ```markdown
@@ -70,6 +70,13 @@ trigger: /pd-brainstorming
 ### 待办事项
 - [ ] 待进一步分析的内容
 ```
+
+方案已保存到 `docs/RAD.md`。根据当前状态引导用户下一步：
+
+- **需要对方案进行压力测试和术语打磨** → 运行 `/pd-grill-with-docs`（它会用项目的领域模型和已有 ADR 来挑战当前方案，修正术语、补充边界条件）
+- **想快速验证关键设计决策的可行性** → 运行 `/pd-prototype`（构建可交互的 throwaway 原型，验证状态机、UI 布局或数据模型）
+- **方案已确定，需要转化为可执行需求文档** → 运行 `/pd-to-prd`（读取 `docs/RAD.md`，合成结构化 PRD 并发布到 issue tracker）
+- **PRD 已发布，需要拆分为独立 issue** → 运行 `/pd-to-issues`（将 PRD 拆分为垂直切片，发布为可被 AFK agent 执行的独立 issue）
 
 ## 关键原则
 

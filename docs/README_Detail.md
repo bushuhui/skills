@@ -422,7 +422,7 @@ python scripts/fetch.py --batch <FILE|->
 **目的**: 深度头脑风暴 + 设计追问 — 把模糊想法变成完整设计方案
 **用途**: 分析需求、规划任务、讨论设计方案、把想法想透想彻底
 **触发**: `/pd_brainstorming`
-**流程**: 理解上下文 → 深度追问（Grill 模式） → 方案输出 → 保存到 `docs/rad.md`
+**流程**: 理解上下文 → 深度追问（Grill 模式） → 方案输出 → 保存到 `docs/RAD.md`
 
 ### write-a-skill
 **目的**: 创建新的 agent skills

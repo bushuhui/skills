@@ -2,6 +2,9 @@
 
 PI-Dev 是一套覆盖**从想法到交付**全链路的工程化 Skill，围绕"先想清楚、再验证、后执行"的理念设计。本文档是 `pd-*` 系列 Skill 的完整使用手册，涵盖全链路开发流程中每个 Skill 的目的、用途、用法和相互关系。
 
+具体的使用示例，可以参考 [uav-planning](https://gitee.com/pi-lab/learn_programming/tree/master/demo_code/2_uav-planning)
+
+
 ---
 
 ## 一、全链路概览

@@ -6,10 +6,21 @@
 
 ### 1. 先滚动触发懒加载
 ```bash
-curl -s "http://localhost:3456/scroll?target=ID&direction=bottom"
+# CLI 直连（需手动 sleep）
+node cdp-cli.mjs scroll <targetId> --direction bottom
 sleep 2
+
+# 或 Proxy（自动等待 800ms）
+curl -s "http://localhost:3456/scroll?target=ID&direction=bottom"
 ```
 不滚动就提取，很多内容还没加载到 DOM 中。
+
+### CDP 加载失败兜底
+
+如果 Chrome 打开后变为 `chrome-error://chromewebdata/`（网络/反爬/文章删除），改用 Jina Reader：
+```bash
+curl -s "https://r.jina.ai/<URL>"
+```
 
 ### 2. 多选择器试探
 ```js
@@ -69,6 +80,39 @@ if (longest.el) contentEl = longest.el;
     contentLen: contentEl ? contentEl.innerText.length : 0
   });
 })()
+```
+
+## TreeWalker 文本节点提取（推荐，2026-05-13）
+
+当 `innerText` 提取结果混杂（包含标题、来源、导航、按钮等嵌套内容）时，用 TreeWalker 直接遍历纯文本节点，是最干净的回退方案。
+
+```js
+const article = document.querySelector("article, .article-content, .content, main, div.main");
+const paragraphs = [];
+if (article) {
+  const walker = document.createTreeWalker(article, NodeFilter.SHOW_TEXT);
+  let node;
+  while (node = walker.nextNode()) {
+    const t = node.textContent.trim();
+    if (t.length > 5) paragraphs.push(t);
+  }
+}
+```
+
+**为什么 TreeWalker 比 `innerText` 好**：
+- `el.innerText` 返回元素+所有子元素的**合并文本**，无法区分标题和正文
+- TreeWalker 直接拿到**每个独立的文本节点**，天然就是段落级别的分割
+- 对嵌套结构深的页面（如头条 `div.main` 包含标题+来源+正文+评论），TreeWalker 能逐个提取，配合去重即可分离
+
+**去重**（同一内容可能被多个容器重复引用）：
+```js
+const seen = new Set();
+const unique = paragraphs.filter(p => {
+  const key = p.substring(0, 50);
+  if (seen.has(key)) return false;
+  seen.add(key);
+  return true;
+});
 ```
 
 ## 常见失败原因

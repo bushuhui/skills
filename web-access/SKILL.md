@@ -149,7 +149,24 @@ node "$SCRIPT" close <targetId>
 
 **注意**：直连模式没有 proxy 的自动等待机制，页面加载后需要手动 `sleep 2-3` 秒再操作。
 
+### CDP 加载失败兜底：Jina Reader
+
+当 Chrome CDP 打开页面后 URL 变为 `chrome-error://chromewebdata/`（网络问题/反爬/文章已删除），CDP 无法提取内容。此时改用 **Jina Reader** 作为兜底：
+
+```bash
+curl -s "https://r.jina.ai/<URL>"
+```
+
+- URL 前加 `r.jina.ai/` 前缀，不保留原网址 `http` 前缀
+- 限 20 RPM
+- 适合文章、博客、文档等以正文为核心的页面
+- 返回 Markdown 格式，包含标题、发布时间、正文
+- 对数据面板、商品页等非文章结构页面可能提取到错误区块
+- **已知可用**：今日头条（`m.toutiao.com`）、微信公众号、一般新闻站点
+
 ### 页面内导航
+
+两种方式打开页面内的链接：
 
 两种方式打开页面内的链接：
 
@@ -258,7 +275,7 @@ updated: 2026-03-19
 
 | 文件 | 何时加载 |
 |------|---------|
-| `references/cdp-api.md` | 需要 CDP API 详细参考、JS 提取模式、错误处理时 |
-| `scripts/cdp-cli.mjs` | **默认使用** — CDP 直连 CLI，所有浏览器操作的首选工具 |
+| `references/cdp-api.md` | CDP 操作完整指南 — CLI 直连 + Proxy 对比、所有命令用法、TreeWalker 提取模板、Jina 兜底 |
+| `references/content-extraction.md` | 动态页面正文提取策略、选择器试探、TreeWalker 回退 |
 | `scripts/cdp-grab.js` | 头条/公众号等动态页面的一键内容抓取（封装完整流程） |
 | `references/site-patterns/{domain}.md` | 确定目标网站后，读取对应站点经验（已知：toutiao.com、mp.weixin.qq.com） |

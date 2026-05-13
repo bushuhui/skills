@@ -1,106 +1,146 @@
-# CDP Proxy API 参考
+# CDP 操作指南
 
-## 基础信息
+## 两种模式对比
 
-- 地址：`http://localhost:3456`
-- 启动：`node ~/.claude/skills/web-access/scripts/cdp-proxy.mjs &`
-- 启动后持续运行，不建议主动停止（重启需 Chrome 重新授权）
-- 强制停止：`pkill -f cdp-proxy.mjs`
+| 维度 | **CLI 直连** (`cdp-cli.mjs`) | **Proxy** (`cdp-proxy.mjs`) |
+|------|---|---|
+| **默认推荐** | ✅ 是 | 复杂交互场景 |
+| **端口** | 9222 | 3456（可配） |
+| **形态** | 一次性 CLI（跑完退出） | 常驻 HTTP 服务 |
+| **自动等待** | ❌ 需手动 sleep 2-3s | ✅ `waitForLoad()` |
+| **Tab 管理** | 手动 `close` | 自动清理闲置 tab |
+| **反风控** | ❌ | ✅ 拦截调试端口探测 |
+| **真实鼠标点击** | ❌ 只有 JS click | ✅ `clickAt` (Input.dispatchMouseEvent) |
+| **文件上传** | ❌ | ✅ `setFiles` |
 
-## API 端点
+**使用建议**：简单操作（查 title、截图、单次 eval）用 CLI 直连；需要导航+等待+点击的串行交互、或需要真实鼠标手势时用 Proxy。
 
-### GET /health
-健康检查，返回连接状态。
+---
+
+## CLI 直连 (cdp-cli.mjs)
+
 ```bash
+SCRIPT="/home/bushuhui/.agents/skills/web-access/scripts/cdp-cli.mjs"
+
+# 列出所有 tab
+node "$SCRIPT" list
+
+# 创建新 tab
+node "$SCRIPT" new "https://example.com"
+# 返回: {"targetId":"xxx","url":"..."}
+
+# 执行 JS
+node "$SCRIPT" eval <targetId> "document.title"
+
+# 滚动
+node "$SCRIPT" scroll <targetId> --direction bottom
+node "$SCRIPT" scroll <targetId> --y 3000
+
+# 截图
+node "$SCRIPT" screenshot <targetId> --file /tmp/shot.png
+
+# 导航
+node "$SCRIPT" navigate <targetId> "https://example.com"
+
+# 后退
+node "$SCRIPT" back <targetId>
+
+# 点击（JS el.click()）
+node "$SCRIPT" click <targetId> "button.submit"
+
+# 关闭 tab
+node "$SCRIPT" close <targetId>
+```
+
+**注意**：直连模式没有自动等待，页面加载后需要手动 `sleep 2-3` 秒再操作。
+
+### 提取正文推荐模式（TreeWalker）
+
+```js
+const article = document.querySelector("article.syl-article-base, .article-content, div.main");
+const walker = document.createTreeWalker(article, NodeFilter.SHOW_TEXT);
+let node;
+const paragraphs = [];
+while (node = walker.nextNode()) {
+  const t = node.textContent.trim();
+  if (t.length > 5 && /* 过滤导航/按钮等噪音 */) {
+    paragraphs.push(t);
+  }
+}
+```
+
+TreeWalker 直接拿纯文本节点，避免 `div.innerText` 包含所有子元素文本的污染。
+
+---
+
+## Proxy 模式 (cdp-proxy.mjs)
+
+**启动**：
+```bash
+node "/home/bushuhui/.agents/skills/web-access/scripts/cdp-proxy.mjs" &
+# 或通过 check-deps.mjs 自动启动
+node "/home/bushuhui/.agents/skills/web-access/scripts/check-deps.mjs"
+```
+
+**停止**：`pkill -f cdp-proxy.mjs`
+
+### HTTP API（端口 3456）
+
+```bash
+# 健康检查
 curl -s http://localhost:3456/health
-```
 
-### GET /targets
-列出所有已打开的页面 tab。返回数组，每项含 `targetId`、`title`、`url`。
-```bash
+# 列出 tab
 curl -s http://localhost:3456/targets
-```
 
-### GET /new?url=URL
-创建新后台 tab，自动等待页面加载完成。返回 `{ targetId }`.
-```bash
+# 创建 tab（自动等待加载）
 curl -s "http://localhost:3456/new?url=https://example.com"
-```
 
-### GET /close?target=ID
-关闭指定 tab。
-```bash
-curl -s "http://localhost:3456/close?target=TARGET_ID"
-```
-
-### GET /navigate?target=ID&url=URL
-在已有 tab 中导航到新 URL，自动等待加载。
-```bash
+# 导航（自动等待加载）
 curl -s "http://localhost:3456/navigate?target=ID&url=https://example.com"
-```
 
-### GET /back?target=ID
-后退一页。
-```bash
-curl -s "http://localhost:3456/back?target=ID"
-```
-
-### GET /info?target=ID
-获取页面基础信息（title、url、readyState）。
-```bash
-curl -s "http://localhost:3456/info?target=ID"
-```
-
-### POST /eval?target=ID
-执行 JavaScript 表达式，POST body 为 JS 代码。
-```bash
+# 执行 JS
 curl -s -X POST "http://localhost:3456/eval?target=ID" -d 'document.title'
-```
 
-### POST /click?target=ID
-JS 层面点击（`el.click()`），POST body 为 CSS 选择器。自动 scrollIntoView 后点击。简单快速，覆盖大多数场景。
-```bash
+# 点击（JS 层面）
 curl -s -X POST "http://localhost:3456/click?target=ID" -d 'button.submit'
-```
 
-### POST /clickAt?target=ID
-CDP 浏览器级真实鼠标点击（`Input.dispatchMouseEvent`），POST body 为 CSS 选择器。先获取元素坐标，再模拟鼠标按下/释放。算真实用户手势，能触发文件对话框、绕过部分反自动化检测。
-```bash
+# 真实鼠标点击（能触发文件对话框、绕过反自动化）
 curl -s -X POST "http://localhost:3456/clickAt?target=ID" -d 'button.upload'
-```
 
-### POST /setFiles?target=ID
-给 file input 设置本地文件路径（`DOM.setFileInputFiles`），完全绕过文件对话框。POST body 为 JSON。
-```bash
-curl -s -X POST "http://localhost:3456/setFiles?target=ID" -d '{"selector":"input[type=file]","files":["/path/to/file1.png","/path/to/file2.png"]}'
-```
+# 设置文件上传
+curl -s -X POST "http://localhost:3456/setFiles?target=ID" -d '{"selector":"input[type=file]","files":["/path/to/file.png"]}'
 
-### GET /scroll?target=ID&y=3000&direction=down
-滚动页面。`direction` 可选 `down`（默认）、`up`、`top`、`bottom`。滚动后自动等待 800ms 供懒加载触发。
-```bash
-curl -s "http://localhost:3456/scroll?target=ID&y=3000"
+# 滚动（自动等待 800ms 懒加载）
 curl -s "http://localhost:3456/scroll?target=ID&direction=bottom"
-```
 
-### GET /screenshot?target=ID&file=/tmp/shot.png
-截图。指定 `file` 参数保存到本地文件；不指定则返回图片二进制。可选 `format=jpeg`。
-```bash
+# 截图
 curl -s "http://localhost:3456/screenshot?target=ID&file=/tmp/shot.png"
+
+# 关闭 tab
+curl -s "http://localhost:3456/close?target=ID"
 ```
 
-## /eval 使用提示
+### Proxy 独有功能
 
-- POST body 为任意 JS 表达式，返回 `{ value }` 或 `{ error }`
-- 支持 `awaitPromise`：可以写 async 表达式
-- 返回值必须是可序列化的（字符串、数字、对象），DOM 节点不能直接返回，需要提取属性
-- 提取大量数据时用 `JSON.stringify()` 包裹，确保返回字符串
-- 根据页面实际 DOM 结构编写选择器，不要套用固定模板
+- **`waitForLoad()`**：导航/新建 tab 后自动等待 `document.readyState === 'complete'`
+- **`clickAt`**：真实鼠标点击，非 JS `el.click()`
+- **`setFiles`**：绕过文件对话框直接设置本地文件
+- **自动清理**：15 分钟闲置 tab 自动关闭，退出时清理所有自建 tab
+- **反风控**：拦截页面对 `127.0.0.1:9222` 的调试端口探测
 
-## 错误处理
+---
 
-| 错误 | 原因 | 解决 |
-|------|------|------|
-| `Chrome 未开启远程调试端口` | Chrome 未开启远程调试 | 提示用户打开 `chrome://inspect/#remote-debugging` 并勾选 Allow |
-| `attach 失败` | targetId 无效或 tab 已关闭 | 用 `/targets` 获取最新列表 |
-| `CDP 命令超时` | 页面长时间未响应 | 重试或检查 tab 状态 |
-| `端口已被占用` | 另一个 proxy 已在运行 | 已有实例可直接复用 |
+## CDP 加载失败兜底：Jina Reader
+
+当 Chrome 打开页面后 URL 变为 `chrome-error://chromewebdata/`（网络/反爬/文章已删除），CDP 无法提取内容。改用 Jina Reader：
+
+```bash
+curl -s "https://r.jina.ai/<URL>"
+```
+
+- URL 前加 `r.jina.ai/`，不保留 `http` 前缀
+- 限 20 RPM
+- 返回 Markdown 格式（标题 + 发布时间 + 正文）
+- **已知可用**：今日头条（`m.toutiao.com`）、微信公众号、一般新闻站点
+- 不适合：数据面板、商品页等非文章结构页面

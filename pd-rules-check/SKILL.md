@@ -1,11 +1,11 @@
 ---
 name: pd-rules-check
-description: 基于 14 套经典软件工程书籍的编码规范，对项目进行代码质量审计。支持两种模式：(A) 先扫描项目特征再自动推荐规范，(B) 用户手动选择规范集。输出结构化审计报告。Use when 用户要求审查代码质量、检查代码规范、评估项目架构、推荐编码规则、或提到 pd-rule-check。
+description: 基于 18 套经典软件工程书籍和语言规范，对项目进行代码质量审计。支持两种模式：(A) 先扫描项目特征再自动推荐规范，(B) 用户手动选择规范集。输出结构化审计报告。Use when 用户要求审查代码质量、检查代码规范、评估项目架构、推荐编码规则、或提到 pd-rule-check。
 ---
 
 # PD Rules Check
 
-基于 14 套经典软件工程书籍的编码规范审计工具。扫描项目或按用户选择，对照规范检查代码，输出带具体规则引用的结构化审计报告。
+基于 18 套经典软件工程书籍和语言规范的编码规范审计工具。扫描项目或按用户选择，对照规范检查代码，输出带具体规则引用的结构化审计报告。
 
 ## 可用规范集
 
@@ -25,6 +25,10 @@ description: 基于 14 套经典软件工程书籍的编码规范，对项目进
 | 5 | `a-philosophy-of-software-design` | 功能实现 ≠ 设计完成 | 28 |
 | 6 | `patterns-of-enterprise-application-architecture` | 选对模式，不要意外混合职责 | 36 |
 | 7 | `working-effectively-with-legacy-code` | 没测试的代码就是遗留代码 | 32 |
+| 15 | `python-patterns` | 能跑的 Python ≠ Pythonic | 15 |
+| 16 | `fastapi-patterns` | 能跑的 FastAPI ≠ 生产就绪 | 10 |
+| 17 | `api-design` | 能用的 API ≠ 好用的 API | 12 |
+| 18 | `cpp-coding-standards` | 能编译的 C++ ≠ 安全的 C++ | 18 |
 
 ### 宏观架构层
 
@@ -138,6 +142,11 @@ description: 基于 14 套经典软件工程书籍的编码规范，对项目进
 | 前端项目 (React/Vue) | clean-code, refactoring | 组件设计 |
 | CRUD / 内部工具 | clean-code, code-complete | 日常质量 |
 | CLI 工具 | code-complete, pragmatic-programmer | 构造纪律 |
+| `*.cpp`/`*.h` / `CMakeLists.txt` / `Makefile` | cpp-coding-standards | C++ 规范检查 |
+| `*.py` + 无框架 | python-patterns | Python 惯用法 |
+| `FastAPI` / `fastapi` import | fastapi-patterns, python-patterns | FastAPI 生产模式 |
+| `/api/` 路由 + REST 端点 | api-design | REST API 设计质量 |
+| `requirements.txt` + `pydantic` | python-patterns | 类型提示和模式 |
 
 ## 兼容性矩阵（精简）
 
@@ -151,6 +160,11 @@ description: 基于 14 套经典软件工程书籍的编码规范，对项目进
 | Clean Code + Code Complete | 🔁 重叠 | 部分规则重合 |
 | Clean Code + Pragmatic Programmer | 🔁 重叠 | 通用工程指导重叠 |
 | Release It + 其他 | ✅ 全部互补 | 运维层面不干扰 |
+| fastapi-patterns + python-patterns | 🔁 部分重叠 | fastapi 是 python 的子集，建议同时加载 |
+| fastapi-patterns + api-design | ✅ 互补 | 框架实现 vs API 设计哲学 |
+| api-design + 其他 | ✅ 全部互补 | 接口契约层，不干扰内部实现 |
+| cpp-coding-standards + 其他 | ✅ 全部互补 | 语言专属规则，不跨语言冲突 |
+| python-patterns + 其他（非C++） | ✅ 全部互补 | 语言专属规则，不冲突 |
 
 ## 审计扫描规则
 
@@ -233,7 +247,20 @@ references/
 ├── release-it/
 ├── designing-data-intensive-applications/
 ├── the-pragmatic-programmer/
-└── working-effectively-with-legacy-code/
+├── the-pragmatic-programmer/
+├── working-effectively-with-legacy-code/
+├── cpp-coding-standards/
+│   ├── cpp-coding-standards.mini.md
+│   └── cpp-coding-standards.nano.md
+├── python-patterns/
+│   ├── python-patterns.mini.md
+│   └── python-patterns.nano.md
+├── api-design/
+│   ├── api-design.mini.md
+│   └── api-design.nano.md
+└── fastapi-patterns/
+    ├── fastapi-patterns.mini.md
+    └── fastapi-patterns.nano.md
 ```
 
 审计时优先使用 `.mini.md` 版本。`.md` (full) 用于深度参考。`.nano.md` 用于快速提醒。

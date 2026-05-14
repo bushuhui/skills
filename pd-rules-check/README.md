@@ -6,7 +6,7 @@
 
 ## 功能概述
 
-本项目提供 **15 套规则集**，分别源自 14 本经典软件工程书籍和 1 个实践网站。每套规则集包含三种粒度版本，适配不同的上下文预算：
+本项目提供 **18 套规则集**，分别源自 14 本经典软件工程书籍、1 个实践网站和 4 套语言/框架规范。每套规则集包含三种粒度版本，适配不同的上下文预算：
 
 | 版本 | 定位 | 适用场景 |
 |------|------|----------|
@@ -32,6 +32,15 @@
 | Release It! | [同名书籍](https://www.goodreads.com/en/book/show/1069827) | Michael T. Nygard | 30 | 断路器、限流、超时、可观测性 |
 | The Pragmatic Programmer | [同名书籍](https://www.goodreads.com/book/show/50701156) | Andrew Hunt & David Thomas | 47 | DRY、正交性、自动化、反馈 |
 | Working Effectively with Legacy Code | [同名书籍](https://www.goodreads.com/book/show/44919) | Michael Feathers | 32 | 遗产代码、特征测试、接缝 |
+
+### 语言与框架规范
+
+| 规则集 | 对应来源 | mini 规则数 | 核心关注点 |
+|--------|---------|:---:|----------|
+| C++ Coding Standards | [C++ Core Guidelines](https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines) | 18 | RAII、类型安全、现代 C++、并发安全 |
+| Python Patterns | 社区最佳实践 | 15 | 可读性、类型提示、惯用法、并发模式 |
+| FastAPI Patterns | 社区实践 | 10 | 应用工厂、依赖注入、Pydantic 模式分离、异步 I/O |
+| API Design Patterns | REST API 最佳实践 | 12 | 资源命名、HTTP 语义、分页、鉴权、版本化 |
 
 ## 用法
 
@@ -65,6 +74,9 @@ cat agent-rules-books/clean-code/clean-code.mini.md >> CLAUDE.md
 - 新项目架构：`Clean Architecture` + `DDD`
 - 微服务/后端：`DDIA` + `Release It!`
 - 遗产代码改造：`Working Effectively with Legacy Code` + `Refactoring`
+- C++ 项目：`cpp-coding-standards` + `Clean Code`
+- Python/FastAPI 后端：`fastapi-patterns` + `python-patterns` + `api-design` + `Release It!`
+- REST API 设计：`api-design` + `Clean Architecture`
 
 ### 各编辑器配置指南
 
@@ -91,6 +103,15 @@ cat agent-rules-books/clean-code/clean-code.mini.md >> CLAUDE.md
 | The Pragmatic Programmer | Andrew Hunt & David Thomas | Pragmatic Bookshelf |
 | Working Effectively with Legacy Code | Michael Feathers | Prentice Hall |
 
+## 语言与框架规范来源
+
+| 规范 | 来源 | 说明 |
+|------|------|------|
+| C++ Coding Standards | [C++ Core Guidelines](https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines) | C++17/20/23 现代实践 |
+| Python Patterns | 社区最佳实践 | PEP 8、类型提示、惯用法 |
+| FastAPI Patterns | 社区实践 | 生产级 FastAPI 项目模式 |
+| API Design Patterns | REST API 最佳实践 | 资源设计、HTTP 语义、版本化 |
+
 > **注意：** 这些规则是受书籍启发的工程实践指令，**不是**原著的替代品，也不是书籍内容的摘要或学习笔记。它们是面向 AI 编码工具的**轻量工作约定**，应视为书籍阅读后的实践补充。
 
 ## 许可
@@ -100,3 +121,7 @@ MIT License
 ## 作者
 
 [Maciej Ciemborowicz](https://maciej-ciemborowicz.eu)
+
+
+## 参考
+- https://github.com/affaan-m/everything-claude-code

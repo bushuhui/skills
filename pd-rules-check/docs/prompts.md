@@ -11,3 +11,7 @@
 你按照 docs/skill_design.md 里面的方案，并使用 write-a-skill 编写 pd-rules-check
 编写的 skill 保存到： /home/a409/knowledge_base/codebase/skills_mcp_plugin/dev/pd-rules-check
 
+
+## 2025-05-14
+
+我在 pd-rules-check 里面增加了 cpp-coding-standards , python-patterns, api-design , fastapi-patterns , 你想想如何改进这个 skill ，能自动引用这些内容

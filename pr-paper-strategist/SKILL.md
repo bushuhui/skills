@@ -1,6 +1,6 @@
 ---
-name: academic-paper-strategist
-description: Systematic strategic planning framework for philosophy and interdisciplinary academic papers targeting preprint platforms (PhilArchive, arXiv, PhilSci-Archive). Use when users want to: (1) plan a paper on a specific topic, (2) identify research gaps and assess originality, (3) develop optimized paper outlines, (4) prepare for preprint submission, or (5) understand platform requirements and writing standards. Triggered by phrases like 'plan a paper on,' 'help me design a paper about,' 'identify research gaps in,' 'is this idea original,' or when users need structured research planning. The skill guides through three phases: Platform Analysis (identifying target venue and studying sample papers), Theoretical Framework (AI-driven literature search and gap identification), and Outline Optimization (structured design with reviewer-perspective self-assessment). Each phase includes quality evaluation standards and validation checkpoints. Output: optimized detailed outline ready for systematic writing (use with academic-paper-composer skill).
+name: pr-paper-strategist
+description: Systematic strategic planning framework for philosophy and interdisciplinary academic papers targeting preprint platforms (PhilArchive, arXiv, PhilSci-Archive). Use when users want to: (1) plan a paper on a specific topic, (2) identify research gaps and assess originality, (3) develop optimized paper outlines, (4) prepare for preprint submission, or (5) understand platform requirements and writing standards. Triggered by phrases like 'plan a paper on,' 'help me design a paper about,' 'identify research gaps in,' 'is this idea original,' or when users need structured research planning. The skill guides through three phases: Platform Analysis (identifying target venue and studying sample papers), Theoretical Framework (AI-driven literature search and gap identification), and Outline Optimization (structured design with reviewer-perspective self-assessment). Each phase includes quality evaluation standards and validation checkpoints. Output: optimized detailed outline ready for systematic writing (use with pr-paper-composer skill).
 ---
 
 # Academic Paper Strategist
@@ -11,13 +11,13 @@ This skill provides a systematic framework for strategic planning of academic pa
 
 **Output**: A detailed, review-ready paper outline with supporting documentation (platform style guide, literature review, gap analysis, reviewer assessment).
 
-**Companion Skill**: Use **academic-paper-composer** to execute the outline and write the full paper.
+**Companion Skill**: Use **pr-paper-composer** to execute the outline and write the full paper.
 
 ---
 
 ## When to Use This Skill
 
-Use **academic-paper-strategist** when you need to:
+Use **pr-paper-strategist** when you need to:
 
 **Planning Stage**:
 - Design a research paper from initial idea to structured outline
@@ -494,7 +494,7 @@ Upon completion of all 3 phases, you receive:
    - Key citations to include
 
 ### Ready for Next Step
-With the **Optimized_Detailed_Outline.md**, proceed to **academic-paper-composer** skill to write the full paper.
+With the **Optimized_Detailed_Outline.md**, proceed to **pr-paper-composer** skill to write the full paper.
 
 ---
 
@@ -640,24 +640,24 @@ This skill has **3 key decision points** where I pause for your input:
 - **Preprint platform focus**: Primarily targets PhilArchive, arXiv, PhilSci-Archive (not peer-reviewed journals)
 - **Requires web access**: Literature search depends on Exa/Tavily MCP tools
 - **Human judgment still essential**: AI provides analysis and recommendations, but you make final decisions
-- **Complementary to writing skill**: This skill produces outlines; use **academic-paper-composer** for actual writing
+- **Complementary to writing skill**: This skill produces outlines; use **pr-paper-composer** for actual writing
 
 ---
 
 ## Related Skills
 
-**Next Step**: academic-paper-composer
+**Next Step**: pr-paper-composer
 - Takes the optimized outline from this skill
 - Executes systematic writing with quality control
 - Produces submission-ready manuscript
 
-**Can Be Used Standalone**: If you already have a mature outline from another source, you can skip this skill and go directly to academic-paper-composer.
+**Can Be Used Standalone**: If you already have a mature outline from another source, you can skip this skill and go directly to pr-paper-composer.
 
 ---
 
 ## Summary
 
-**academic-paper-strategist** transforms a research idea into a publication-ready outline through:
+**pr-paper-strategist** transforms a research idea into a publication-ready outline through:
 
 1. **Platform Analysis**: Identify optimal venue and learn writing standards (8-10 sample papers)
 2. **Theoretical Framework**: AI-driven literature search (35-50 papers) + gap identification (3-5 gaps) + originality assessment

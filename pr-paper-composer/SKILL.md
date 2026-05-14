@@ -1,6 +1,6 @@
 ---
-name: academic-paper-composer
-description: Systematic writing framework for philosophy and interdisciplinary academic papers from optimized outline to submission-ready manuscript. Use when users want to: (1) write a paper from a detailed outline, (2) ensure quality control during writing, (3) maintain consistency across chapters, (4) prepare a submission-ready manuscript, or (5) systematically execute a planned paper. Triggered by phrases like 'write the paper from this outline,' 'compose the full manuscript,' 'execute the outline,' or when users have completed strategic planning (academic-paper-strategist skill) and are ready to write. Takes optimized outline as input; outputs complete manuscript with iterative quality checks.
+name: pr-paper-composer
+description: Systematic writing framework for philosophy and interdisciplinary academic papers from optimized outline to submission-ready manuscript. Use when users want to: (1) write a paper from a detailed outline, (2) ensure quality control during writing, (3) maintain consistency across chapters, (4) prepare a submission-ready manuscript, or (5) systematically execute a planned paper. Triggered by phrases like 'write the paper from this outline,' 'compose the full manuscript,' 'execute the outline,' or when users have completed strategic planning (pr-paper-strategist skill) and are ready to write. Takes optimized outline as input; outputs complete manuscript with iterative quality checks.
 ---
 
 # Academic Paper Composer
@@ -9,17 +9,17 @@ description: Systematic writing framework for philosophy and interdisciplinary a
 
 This skill provides a systematic framework for writing academic papers from optimized outline to submission-ready manuscript. It implements iterative quality control at both chapter-level and paper-level, ensuring consistent high quality throughout the writing process.
 
-**Input**: Detailed, optimized paper outline (from academic-paper-strategist or equivalent)
+**Input**: Detailed, optimized paper outline (from pr-paper-strategist or equivalent)
 
 **Output**: Complete, submission-ready manuscript with quality validation reports
 
-**Prerequisite**: Use **academic-paper-strategist** skill first to create optimized outline (or provide equivalent detailed outline)
+**Prerequisite**: Use **pr-paper-strategist** skill first to create optimized outline (or provide equivalent detailed outline)
 
 ---
 
 ## When to Use This Skill
 
-Use **academic-paper-composer** when you need to:
+Use **pr-paper-composer** when you need to:
 
 **Writing Stage**:
 - Execute a detailed paper outline systematically
@@ -43,7 +43,7 @@ Use **academic-paper-composer** when you need to:
 - "Compose the full manuscript"
 - "Execute the outline systematically"
 - "I have an outline, help me write the paper"
-- After completing academic-paper-strategist skill
+- After completing pr-paper-strategist skill
 
 ---
 
@@ -95,10 +95,10 @@ Before using this skill, you must provide:
 - ✓ Key citations to include
 - ✓ Argument structure notes
 
-If outline lacks these, consider using **academic-paper-strategist** first.
+If outline lacks these, consider using **pr-paper-strategist** first.
 
 ### 2. Platform Writing Standards Guide
-**From academic-paper-strategist Phase 1**, or equivalent document specifying:
+**From pr-paper-strategist Phase 1**, or equivalent document specifying:
 - Platform style patterns (voice, terminology, citation format)
 - Structural conventions
 - Example papers for reference
@@ -714,17 +714,17 @@ This skill has **3 key decision points** where I pause for your input:
 
 ## Integration with Academic-Paper-Strategist
 
-This skill is designed to work seamlessly with **academic-paper-strategist**:
+This skill is designed to work seamlessly with **pr-paper-strategist**:
 
 **Ideal workflow**:
-1. Use **academic-paper-strategist** to:
+1. Use **pr-paper-strategist** to:
    - Identify optimal platform
    - Conduct literature search
    - Identify research gaps
    - Assess originality
    - Generate optimized detailed outline
 
-2. Use **academic-paper-composer** (this skill) to:
+2. Use **pr-paper-composer** (this skill) to:
    - Execute the outline systematically
    - Maintain quality control during writing
    - Produce submission-ready manuscript
@@ -818,7 +818,7 @@ This skill is designed to work seamlessly with **academic-paper-strategist**:
 
 ## Summary
 
-**academic-paper-composer** transforms an optimized outline into a submission-ready manuscript through:
+**pr-paper-composer** transforms an optimized outline into a submission-ready manuscript through:
 
 1. **Systematic Writing** (Phase 4): Chapter-by-chapter execution with 5-dimension quality checks after each (≥16/20 threshold)
 2. **Quality Control** (Phase 5): Final 7-dimension assessment (≥56/70 threshold) + completeness validation + submission preparation
@@ -833,7 +833,7 @@ This skill is designed to work seamlessly with **academic-paper-strategist**:
 
 ## Related Skills
 
-**Prerequisite**: academic-paper-strategist
+**Prerequisite**: pr-paper-strategist
 - Produces the optimized outline that this skill executes
 - Highly recommended to use first for best results
 

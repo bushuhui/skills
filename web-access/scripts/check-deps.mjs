@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-// 环境检查 + 确保 CDP Proxy 就绪（跨平台，替代 check-deps.sh）
+// 环境检查 + Chrome CDP 端口 9222 可用性检测
+// 默认直连 Chrome 9222 端口；连不上自动运行 chrome-debug.sh 启动 Chrome
 
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
@@ -9,8 +10,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const PROXY_SCRIPT = path.join(ROOT, 'scripts', 'cdp-proxy.mjs');
-const PROXY_PORT = Number(process.env.CDP_PROXY_PORT || 3456);
+const CDP_PORT = 9222;
+const CHROME_DEBUG_SCRIPT = path.join(ROOT, 'scripts', 'chrome-debug.sh');
 
 // --- Node.js 版本检查 ---
 
@@ -44,7 +45,7 @@ function activePortFiles() {
     case 'darwin':
       return [
         path.join(home, 'Library/Application Support/Google/Chrome/DevToolsActivePort'),
-        path.join(home, 'Library/Application Support/Google/Chrome Canary/DevToolsActivePort'),
+        path.join(home, 'Library/Application Support/Chrome/DevToolsActivePort'),
         path.join(home, 'Library/Application Support/Chromium/DevToolsActivePort'),
       ];
     case 'linux':
@@ -82,59 +83,55 @@ async function detectChromePort() {
   return null;
 }
 
-// --- CDP Proxy 启动与等待 ---
+// --- Chrome 启动（运行 chrome-debug.sh） ---
 
-function httpGetJson(url, timeoutMs = 3000) {
-  return fetch(url, { signal: AbortSignal.timeout(timeoutMs) })
-    .then(async (res) => {
-      try { return JSON.parse(await res.text()); } catch { return null; }
-    })
-    .catch(() => null);
-}
+function launchChromeDebug() {
+  return new Promise((resolve) => {
+    if (!fs.existsSync(CHROME_DEBUG_SCRIPT)) {
+      console.log(`❌ 找不到启动脚本: ${CHROME_DEBUG_SCRIPT}`);
+      resolve(false);
+      return;
+    }
 
-function startProxyDetached() {
-  const logFile = path.join(os.tmpdir(), 'cdp-proxy.log');
-  const logFd = fs.openSync(logFile, 'a');
-  const child = spawn(process.execPath, [PROXY_SCRIPT], {
-    detached: true,
-    stdio: ['ignore', logFd, logFd],
-    ...(os.platform() === 'win32' ? { windowsHide: true } : {}),
+    console.log('chrome: 未检测到调试端口，正在启动 Chrome...');
+    const child = spawn('bash', [CHROME_DEBUG_SCRIPT, String(CDP_PORT)], {
+      stdio: ['ignore', 'pipe', 'pipe'],
+      detached: false,
+    });
+
+    let stdout = '';
+    child.stdout.on('data', (d) => { stdout += d.toString(); process.stdout.write(d); });
+    child.stderr.on('data', (d) => { process.stderr.write(d); });
+
+    child.on('close', (code) => {
+      resolve(code === 0);
+    });
   });
-  child.unref();
-  fs.closeSync(logFd);
 }
 
-async function ensureProxy() {
-  const targetsUrl = `http://127.0.0.1:${PROXY_PORT}/targets`;
+// --- 等待 Chrome 就绪 ---
 
-  // /targets 返回 JSON 数组即 ready
-  const targets = await httpGetJson(targetsUrl);
-  if (Array.isArray(targets)) {
-    console.log('proxy: ready');
-    return true;
-  }
-
-  // 未运行或未连接，启动并等待
-  console.log('proxy: connecting...');
-  startProxyDetached();
-
-  // 等 proxy 进程就绪
-  await new Promise((r) => setTimeout(r, 2000));
-
-  for (let i = 1; i <= 15; i++) {
-    const result = await httpGetJson(targetsUrl, 8000);
-    if (Array.isArray(result)) {
-      console.log('proxy: ready');
-      return true;
+async function waitForChrome(timeoutMs = 15000, intervalMs = 1000) {
+  const start = Date.now();
+  let attempts = 0;
+  while (Date.now() - start < timeoutMs) {
+    attempts++;
+    if (await checkPort(CDP_PORT)) {
+      // 验证 CDP 是否真正可用
+      try {
+        const res = await fetch(`http://127.0.0.1:${CDP_PORT}/json/version`, {
+          signal: AbortSignal.timeout(3000),
+        });
+        if (res.ok) {
+          return true;
+        }
+      } catch (_) {}
     }
-    if (i === 1) {
-      console.log('⚠️  Chrome 可能有授权弹窗，请点击「允许」后等待连接...');
+    if (attempts === 1) {
+      console.log('等待 Chrome 启动...');
     }
-    await new Promise((r) => setTimeout(r, 1000));
+    await new Promise((r) => setTimeout(r, intervalMs));
   }
-
-  console.log('❌ 连接超时，请检查 Chrome 调试设置');
-  console.log(`  日志：${path.join(os.tmpdir(), 'cdp-proxy.log')}`);
   return false;
 }
 
@@ -143,16 +140,25 @@ async function ensureProxy() {
 async function main() {
   checkNode();
 
+  // 第一步：尝试直连已有的 Chrome
   const chromePort = await detectChromePort();
-  if (!chromePort) {
-    console.log('chrome: not connected — 请确保 Chrome 已打开，然后访问 chrome://inspect/#remote-debugging 并勾选 Allow remote debugging');
-    process.exit(1);
-  }
-  console.log(`chrome: ok (port ${chromePort})`);
+  if (chromePort) {
+    console.log(`chrome: ok (port ${chromePort})`);
+  } else {
+    // 第二步：连不上，自动启动 Chrome
+    const launched = await launchChromeDebug();
+    if (!launched) {
+      console.log('❌ Chrome 启动失败');
+      process.exit(1);
+    }
 
-  const proxyOk = await ensureProxy();
-  if (!proxyOk) {
-    process.exit(1);
+    // 第三步：等待 Chrome 就绪
+    const ready = await waitForChrome();
+    if (!ready) {
+      console.log(`❌ Chrome 未在 ${CDP_PORT} 端口就绪，请检查浏览器是否安装`);
+      process.exit(1);
+    }
+    console.log(`chrome: ok (port ${CDP_PORT}, auto-started)`);
   }
 
   // 列出已有站点经验
@@ -165,7 +171,6 @@ async function main() {
       console.log(`\nsite-patterns: ${sites.join(', ')}`);
     }
   } catch {}
-
 }
 
 await main();

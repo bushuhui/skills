@@ -20,9 +20,9 @@ metadata:
 node "${CLAUDE_SKILL_DIR}/scripts/check-deps.mjs"
 ```
 
-未通过时引导用户完成设置：
+检查逻辑：
 - **Node.js 22+**：必需（使用原生 WebSocket）。版本低于 22 可用但需安装 `ws` 模块。
-- **Chrome remote-debugging**：在 Chrome 地址栏打开 `chrome://inspect/#remote-debugging`，勾选 **"Allow remote debugging for this browser instance"** 即可，可能需要重启浏览器。
+- **Chrome CDP 端口 9222**：优先尝试直连已有的 Chrome 调试端口。如果连接失败，自动运行 `scripts/chrome-debug.sh` 启动 Chrome 并等待就绪，无需用户手动操作。
 
 检查通过后必须在回复中向用户直接展示以下须知，再执行 CDP 操作：
 
@@ -101,9 +101,9 @@ node "${CLAUDE_SKILL_DIR}/scripts/find-url.mjs" [关键词...] [--only bookmarks
 node "${CLAUDE_SKILL_DIR}/scripts/check-deps.mjs"
 ```
 
-未通过时引导用户完成设置：
+检查逻辑：
 - **Node.js 22+**：必需（使用原生 WebSocket）
-- **Chrome remote-debugging**：在 Chrome 地址栏打开 `chrome://inspect/#remote-debugging`，勾选 **"Allow remote debugging for this browser instance"**
+- **Chrome CDP 端口 9222**：优先直连已有 Chrome，连接失败自动启动 Chrome，无需用户手动干预
 
 检查通过后必须在回复中展示以下须知：
 
@@ -145,9 +145,7 @@ node "$SCRIPT" scroll <targetId> --y 3000
 node "$SCRIPT" close <targetId>
 ```
 
-**典型工作流**：`new` 获取 targetId → `eval`/`scroll`/`click` 操作 → `screenshot` 截图 → `close` 清理。
-
-**注意**：直连模式没有 proxy 的自动等待机制，页面加载后需要手动 `sleep 2-3` 秒再操作。
+**典型工作流**：`new` 获取 targetId → `eval`/`scroll`/`click` 操作 → `screenshot` 截图 → `close` 清理。页面加载后建议 `sleep 2-3` 秒再操作，确保 DOM 就绪。
 
 ### CDP 加载失败兜底：Jina Reader
 
@@ -275,7 +273,7 @@ updated: 2026-03-19
 
 | 文件 | 何时加载 |
 |------|---------|
-| `references/cdp-api.md` | CDP 操作完整指南 — CLI 直连 + Proxy 对比、所有命令用法、TreeWalker 提取模板、Jina 兜底 |
+| `references/cdp-api.md` | CDP 操作完整指南 — 所有命令用法、TreeWalker 提取模板、Jina 兜底 |
 | `references/content-extraction.md` | 动态页面正文提取策略、选择器试探、TreeWalker 回退 |
 | `scripts/cdp-grab.js` | 头条/公众号等动态页面的一键内容抓取（封装完整流程） |
 | `references/site-patterns/{domain}.md` | 确定目标网站后，读取对应站点经验（已知：toutiao.com、mp.weixin.qq.com） |

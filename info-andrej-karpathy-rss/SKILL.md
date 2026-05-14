@@ -1,5 +1,5 @@
 ---
-name: andrej-karpathy-curated-rss
+name: info-andrej-karpathy-rss
 description: |
   抓取 Andrej Karpathy 精选 RSS 订阅包的最新内容，翻译摘要为中文，保存到 Obsidian 知识库。
   触发条件：

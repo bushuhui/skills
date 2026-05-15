@@ -1,0 +1,19 @@
+
+## prompt
+你帮我改进一下 markdown-to-docx ， 在执行 pandoc 将Markdown 转化成 docx 的时候，命令行增加一个如下的命令行参数：
+--reference-doc=template/pandoc-template.docx
+
+模版文件在这个skill 的template里面
+
+
+
+帮我仔细检查一下 markdown-to-docx 这个 skill 的激活词，如何才能更好的激活并使用这个 skill ？
+
+
+帮我改进一下 markdown-to-docx ， 如果用户指定使用了 template，则使用用户指定的 template 文件
+
+
+
+你帮我改进 markdown-to-docx 支持更多Agent平台的方法和标准，就是：
+- 使用通用的 ${SKILL_DIR} 占位符 + 说明文字，让任何能读取 SKILL.md 的 Agent 都知道需要替换为真实路径。
+把这些能够支持多Agent平台的方法和处理标准，加入到 write-a-skill 这个 skill

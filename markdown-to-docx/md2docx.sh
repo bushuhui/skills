@@ -15,6 +15,7 @@ usage() {
     echo "用法："
     echo "  方式 A（直接转换）："
     echo "    $0 <input.md> [output.docx]"
+    echo "    $0 <input.md> [output.docx] --reference-doc|-r <template.docx>"
     echo ""
     echo "  方式 B（模板转换）："
     echo "    $0 --template <template.docx> <input.md> [output.docx]"
@@ -22,6 +23,7 @@ usage() {
     echo "示例:"
     echo "  $0 paper.md"
     echo "  $0 paper.md output.docx"
+    echo "  $0 paper.md -r /path/to/my-template.docx"
     echo "  $0 --template template.docx paper.md output.docx"
     exit 0
 }
@@ -32,10 +34,15 @@ fi
 
 # 解析参数
 TEMPLATE=""
+REFERENCE_DOC=""
 while [[ "$1" == --* ]]; do
     case "$1" in
         --template|-t)
             TEMPLATE="$2"
+            shift 2
+            ;;
+        --reference-doc|-r)
+            REFERENCE_DOC="$2"
             shift 2
             ;;
         *)
@@ -55,6 +62,11 @@ fi
 
 if [ -n "$TEMPLATE" ] && [ ! -f "$TEMPLATE" ]; then
     echo "错误：模板文件不存在：$TEMPLATE"
+    exit 1
+fi
+
+if [ -n "$REFERENCE_DOC" ] && [ ! -f "$REFERENCE_DOC" ]; then
+    echo "错误：参考文档不存在：$REFERENCE_DOC"
     exit 1
 fi
 
@@ -94,6 +106,7 @@ else
     echo "=== 方式 A：直接转换 ==="
     echo "输入文件：$INPUT_FILE"
     echo "输出文件：$OUTPUT_FILE"
+    [ -n "$REFERENCE_DOC" ] && echo "参考文档：$REFERENCE_DOC" || echo "参考文档：内置模板"
     echo ""
 
     if ! command -v pandoc &> /dev/null; then
@@ -104,11 +117,14 @@ else
 
     # 先运行 Python 脚本做公式修正
     if command -v python3 &> /dev/null && [ -f "$SCRIPT_DIR/md2docx_converter.py" ]; then
-        python3 "$SCRIPT_DIR/md2docx_converter.py" "$INPUT_FILE" "$OUTPUT_FILE"
+        REF_ARG=""
+        [ -n "$REFERENCE_DOC" ] && REF_ARG="--reference-doc $REFERENCE_DOC"
+        python3 "$SCRIPT_DIR/md2docx_converter.py" "$INPUT_FILE" "$OUTPUT_FILE" $REF_ARG
     else
         # 降级到纯 pandoc
         echo "正在转换..."
-        pandoc "$INPUT_FILE" -o "$OUTPUT_FILE" --mathml
+        REF_DOC="${REFERENCE_DOC:-$SCRIPT_DIR/template/pandoc-template.docx}"
+        pandoc "$INPUT_FILE" -o "$OUTPUT_FILE" --mathml --reference-doc="$REF_DOC"
     fi
 fi
 

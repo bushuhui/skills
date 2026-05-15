@@ -132,9 +132,11 @@ class MarkdownFormulaFixer:
 class MarkdownToDocxConverter:
     """Markdown to DOCX 转换器"""
 
-    def __init__(self, input_path: str, output_path: Optional[str] = None):
+    def __init__(self, input_path: str, output_path: Optional[str] = None,
+                 reference_doc: Optional[str] = None):
         self.input_path = input_path
         self.output_path = output_path or self._get_default_output_path()
+        self.reference_doc = reference_doc
         self.fixer = MarkdownFormulaFixer()
 
     def _get_default_output_path(self) -> str:
@@ -202,11 +204,17 @@ class MarkdownToDocxConverter:
             input_file = self.input_path
 
         # 构建 pandoc 命令
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        if self.reference_doc and os.path.exists(self.reference_doc):
+            reference_doc = os.path.abspath(self.reference_doc)
+        else:
+            reference_doc = os.path.join(script_dir, 'template', 'pandoc-template.docx')
         cmd = [
             'pandoc',
             input_file,
             '-o', self.output_path,
             '--mathml',  # 使用 MathML（Word 支持）
+            '--reference-doc=' + reference_doc,
         ]
 
         print(f"执行转换：{' '.join(cmd)}")
@@ -262,21 +270,43 @@ class MarkdownToDocxConverter:
 
 def main():
     """命令行入口"""
-    if len(sys.argv) < 2:
-        print("用法：python md2docx_converter.py <input.md> [output.docx]")
+    # 解析 --reference-doc 参数
+    args = sys.argv[1:]
+    input_path = None
+    output_path = None
+    reference_doc = None
+
+    i = 0
+    while i < len(args):
+        if args[i] in ('--reference-doc', '-r'):
+            reference_doc = args[i + 1]
+            i += 2
+        elif input_path is None:
+            input_path = args[i]
+            i += 1
+        elif output_path is None:
+            output_path = args[i]
+            i += 1
+        else:
+            i += 1
+
+    if not input_path:
+        print("用法：python md2docx_converter.py <input.md> [output.docx] [--reference-doc|-r <template.docx>]")
         print("\n示例:")
         print("  python md2docx_converter.py paper.md")
         print("  python md2docx_converter.py paper.md output.docx")
+        print("  python md2docx_converter.py paper.md -r my_template.docx")
         sys.exit(1)
-
-    input_path = sys.argv[1]
-    output_path = sys.argv[2] if len(sys.argv) > 2 else None
 
     if not os.path.exists(input_path):
         print(f"错误：文件不存在：{input_path}")
         sys.exit(1)
 
-    converter = MarkdownToDocxConverter(input_path, output_path)
+    if reference_doc and not os.path.exists(reference_doc):
+        print(f"错误：参考文档不存在：{reference_doc}")
+        sys.exit(1)
+
+    converter = MarkdownToDocxConverter(input_path, output_path, reference_doc=reference_doc)
 
     try:
         result = converter.convert(fix_first=True)

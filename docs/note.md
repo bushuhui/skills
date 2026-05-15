@@ -26,3 +26,29 @@ README.md 就留下简要的说明： 本项目的目的，怎么安装（Claude
 可以把 /home/bushuhui/scripts/clash_ctl.py 拷贝到 skill 的目录里，如果需要改进可以改进skill目录里面的程序
 
 
+## 2025-05-15
+
+你帮我改进一下 pr-paper-auto-review/prompt/academic_polishing.md ，整理里面的内容，做成论文润色的prompt。使用这个prompt，并给一篇论文，能给出论文润色的建议
+
+
+帮我改进一下 pr-paper-auto-review
+主要的改进点如下：
+1. 论文审稿的 prompt 文件改变位置了
+  - review_prompt.md -> prompt/review_prompt.md
+  - review_prompt_cn.md -> prompt/review_prompt_cn.md
+2. 不仅审论文，也需要审如下类型的资料，类型可以是用户数据的，如果没有输入你根据文章的内容自动判断。根据输入文章的类型，选择如下的prompt
+  - 英文论文: prompt/paper_review_prompt.md
+  - 中文论文: prompt/paper_review_prompt_cn.md
+  - 中期答辩: prompt/中期答辩.md
+  - 开题答辩: prompt/开题答辩.md.md
+  - 硕士论文: prompt/master_thesis.md
+  - 博士论文: prompt/doctor_thesis.md
+  - 论文精读: prompt/paper_fine_reading.md
+  - 审稿屠夫-润色匠人: prompt/critic_mentor_review.md
+  - 论文润色: prompt/academic_polishing.md
+
+
+帮我改进一下 pr-paper-auto-review， 如果用户输入的文件，已经是 Markdown 格式的文件，则直接审稿
+
+
+帮我改进一下 pr-paper-auto-review， 增加自然基金(NSFC)的申请书的评价，prompt是 prompt/NSFC.md

@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Paper Auto Review - 批量自动审稿
+Paper Auto Review - 多类型论文自动审稿
 
 流程：
 1. 扫描论文目录，找出没有 review*.md 的论文
 2. 使用 pi-llm-server 将 PDF/DOCX/DOC 转成 Markdown
-3. 将 review_prompt.md + Markdown 论文传给 LLM 进行审稿
+3. 根据论文类型选择对应 prompt，传给 LLM 进行审稿
 4. 审稿结果保存为 review_draft.md（放在论文同级目录）
 
 依赖：
@@ -15,6 +15,18 @@ Paper Auto Review - 批量自动审稿
 环境变量：
 - PI_LLM_URL / PI_LLM_API_KEY: PDF 转 Markdown 服务（pi-llm-server）
 - LLM_URL / LLM_API_KEY / LLM_MODEL: 大语言模型审稿服务
+
+支持的审稿类型（--review-type）：
+- paper_en: 英文论文
+- paper_cn: 中文论文
+- midterm: 中期答辩
+- proposal: 开题答辩
+- master_thesis: 硕士论文
+- doctor_thesis: 博士论文
+- fine_reading: 论文精读
+- critic_mentor: 审稿屠夫-润色匠人
+- polishing: 论文润色
+- auto: 自动检测类型（默认）
 """
 
 from __future__ import annotations
@@ -47,11 +59,41 @@ LLM_API_KEY = os.environ["LLM_API_KEY"]
 LLM_MODEL = os.environ["LLM_MODEL"]
 
 SCRIPT_DIR = Path(__file__).resolve().parent
+PROMPT_DIR = SCRIPT_DIR / "prompt"
 PAPER_ROOT = Path(
     "/home/bushuhui/datacenter/papers/paper-review"
 )
-REVIEW_PROMPT_PATH = SCRIPT_DIR / "review_prompt.md"
-REVIEW_PROMPT_CN_PATH = SCRIPT_DIR / "review_prompt_cn.md"
+
+# 审稿类型 → prompt 文件映射
+REVIEW_TYPE_PROMPTS = {
+    "paper_en": "paper_review_prompt.md",
+    "paper_cn": "paper_review_prompt_cn.md",
+    "midterm": "中期答辩.md",
+    "proposal": "开题答辩.md",
+    "master_thesis": "master_thesis.md",
+    "doctor_thesis": "doctor_thesis.md",
+    "fine_reading": "paper_fine_reading.md",
+    "critic_mentor": "critic_mentor_review.md",
+    "polishing": "academic_polishing.md",
+    "nsfc": "NSFC.md",
+}
+
+# 自动检测：关键词 → 类型
+AUTO_DETECT_KEYWORDS = {
+    "中期": "midterm",
+    "中期报告": "midterm",
+    "中期答辩": "midterm",
+    "开题": "proposal",
+    "开题报告": "proposal",
+    "开题答辩": "proposal",
+    "硕士学位论文": "master_thesis",
+    "硕士论文": "master_thesis",
+    "博士学位论文": "doctor_thesis",
+    "博士论文": "doctor_thesis",
+    "国家自然科学基金": "nsfc",
+    "NSFC": "nsfc",
+    "基金申请书": "nsfc",
+}
 
 PI_LLM_HEADERS = {
     "Authorization": f"Bearer {PI_LLM_API_KEY}",
@@ -64,7 +106,7 @@ LLM_HEADERS = {
 
 # ===== Step 1: 扫描待审稿论文 =====
 def scan_pending_papers(root: Path, year: str, max_depth: int = 5) -> list[Path]:
-    """找出没有 review*.md 的论文目录中的 PDF/DOCX/DOC 文件。"""
+    """找出没有 review*.md 的论文目录中的 PDF/DOCX/DOC/MD 文件。"""
     pending = []
     base = root / year
     if not base.exists():
@@ -82,9 +124,9 @@ def scan_pending_papers(root: Path, year: str, max_depth: int = 5) -> list[Path]
         review_files = list(source_path.glob("review*.md")) + list(source_path.glob("review_draft.md"))
         if review_files:
             continue
-        # 查找 PDF/DOCX/DOC 文件
-        for ext in ("*.pdf", "*.docx", "*.doc"):
-            found = list(source_path.glob(ext))
+        # 查找 PDF/DOCX/DOC/MD 文件，优先取非 review_ 开头的 Markdown
+        for ext in ("*.pdf", "*.docx", "*.doc", "*.md"):
+            found = [f for f in source_path.glob(ext) if not f.name.startswith("review_")]
             if found:
                 pending.append(found[0])
                 break
@@ -197,15 +239,59 @@ def parse_to_markdown(source_path: Path) -> Path | None:
     return None
 
 
-# ===== Step 3: 调用 LLM 审稿 =====
-def generate_review(markdown_path: Path, review_prompt: str, review_prompt_cn: str) -> str | None:
+# ===== Step 3: 自动检测论文类型 =====
+def detect_review_type(text: str, explicit_type: str | None = None) -> tuple[str, str]:
     """
-    将 review_prompt + 论文 Markdown 内容发给 LLM，
+    检测论文类型，返回 (类型, 对应 prompt 文件名)。
+
+    如果 explicit_type 不为 None，直接使用；
+    否则根据内容关键词自动判断；
+    默认回退到 paper_en/paper_cn（基于语言检测）。
+    """
+    if explicit_type and explicit_type != "auto":
+        if explicit_type not in REVIEW_TYPE_PROMPTS:
+            print(f"  ⚠ 未知审稿类型: {explicit_type}，将自动检测")
+        else:
+            return explicit_type, REVIEW_TYPE_PROMPTS[explicit_type]
+
+    # 基于关键词自动检测
+    first_500 = text[:2000]  # 只看开头部分
+    for keyword, review_type in AUTO_DETECT_KEYWORDS.items():
+        if keyword in first_500:
+            print(f"  ℹ 自动检测到类型: {review_type} (关键词: {keyword})")
+            return review_type, REVIEW_TYPE_PROMPTS[review_type]
+
+    # 默认：按语言选择论文审稿模板
+    lang = detect_language(text)
+    if lang == 'zh':
+        return 'paper_cn', REVIEW_TYPE_PROMPTS['paper_cn']
+    else:
+        return 'paper_en', REVIEW_TYPE_PROMPTS['paper_en']
+
+
+# ===== Step 4: 调用 LLM 审稿 =====
+def generate_review(markdown_path: Path, review_type: str) -> str | None:
+    """
+    将对应类型的 prompt + 论文 Markdown 内容发给 LLM，
     返回审稿意见。
     """
     print(f"  → 正在生成审稿意见...")
 
-    # 读取 Markdown 内容
+    # 读取 prompt
+    prompt_file = REVIEW_TYPE_PROMPTS.get(review_type)
+    if not prompt_file:
+        print(f"  ✗ 未知的审稿类型: {review_type}")
+        return None
+    prompt_path = PROMPT_DIR / prompt_file
+    if not prompt_path.exists():
+        print(f"  ✗ 审稿 prompt 文件不存在: {prompt_path}")
+        return None
+    prompt = prompt_path.read_text(encoding="utf-8").strip()
+    if not prompt:
+        print(f"  ✗ 审稿 prompt 文件为空: {prompt_path}")
+        return None
+
+    # 读取论文内容
     content = markdown_path.read_text(encoding="utf-8")
 
     # 截断过长内容（64K tokens ≈ 200K 字符，留足空间给 prompt 和输出）
@@ -214,25 +300,20 @@ def generate_review(markdown_path: Path, review_prompt: str, review_prompt_cn: s
         content = content[:max_chars]
         print(f"  ⚠ 论文内容过长，已截断至 {max_chars} 字符")
 
-    # 检测论文语言
-    lang = detect_language(content)
-    if lang == 'zh':
-        prompt = review_prompt_cn
-        system_msg = "你是一位专业的学术审稿人。请用中文撰写审稿意见。"
-        print(f"  ℹ 检测到中文论文，使用中文审稿模板")
-    else:
-        prompt = review_prompt
-        system_msg = "你是一位专业的学术审稿人。请用英文撰写审稿意见。"
-        print(f"  ℹ 检测到英文论文，使用英文审稿模板")
-
     user_message = f"""{prompt}
 
 ---
 
-以下是论文的完整内容：
+以下是需要审阅的文本内容：
 
 {content}
 """
+
+    # 根据类型设置 system message
+    if review_type in ("paper_cn", "midterm", "proposal", "master_thesis", "doctor_thesis", "fine_reading", "critic_mentor", "polishing", "nsfc"):
+        system_msg = "你是一位专业的学术审稿人。请用中文撰写审稿意见。"
+    else:
+        system_msg = "你是一位专业的学术审稿人。请用英文撰写审稿意见。"
 
     session = requests.Session()
     session.trust_env = False
@@ -277,24 +358,13 @@ def generate_review(markdown_path: Path, review_prompt: str, review_prompt_cn: s
 def run(args: argparse.Namespace) -> int:
     year = args.year
     root = args.paper_root or PAPER_ROOT
-    review_prompt_path = args.review_prompt or REVIEW_PROMPT_PATH
+    review_type = args.review_type or "auto"
 
-    # 加载审稿 prompt（英文）
-    if not review_prompt_path.exists():
-        print(f"[ERROR] 审稿 prompt 文件不存在: {review_prompt_path}")
-        return 1
-    review_prompt = review_prompt_path.read_text(encoding="utf-8").strip()
-    if not review_prompt:
-        print(f"[ERROR] 审稿 prompt 文件为空: {review_prompt_path}")
-        return 1
-
-    # 加载中文审稿 prompt
-    if not REVIEW_PROMPT_CN_PATH.exists():
-        print(f"[ERROR] 中文审稿 prompt 文件不存在: {REVIEW_PROMPT_CN_PATH}")
-        return 1
-    review_prompt_cn = REVIEW_PROMPT_CN_PATH.read_text(encoding="utf-8").strip()
-    if not review_prompt_cn:
-        print(f"[ERROR] 中文审稿 prompt 文件为空: {REVIEW_PROMPT_CN_PATH}")
+    # 验证审稿类型
+    if review_type != "auto" and review_type not in REVIEW_TYPE_PROMPTS:
+        valid_types = ", ".join(REVIEW_TYPE_PROMPTS.keys())
+        print(f"[ERROR] 未知审稿类型: {review_type}")
+        print(f"支持的类型: {valid_types}")
         return 1
 
     # Step 1: 扫描
@@ -314,16 +384,21 @@ def run(args: argparse.Namespace) -> int:
         print(f"[{i}/{len(pending)}] 处理: {source_path.name}")
 
         # 检查是否已有 Markdown 文件
-        md_path = source_path.parent / f"{source_path.stem}.md"
-        if md_path.exists():
-            print(f"  ✓ Markdown 已存在: {md_path}")
+        # 如果输入本身就是 .md 文件，直接使用
+        if source_path.suffix.lower() == ".md":
+            md_path = source_path
+            print(f"  ✓ Markdown 文件: {md_path}")
         else:
-            # Step 2: 转换 Markdown
-            md_path = parse_to_markdown(source_path)
-            if md_path is None:
-                print(f"  ✗ Markdown 转换失败，跳过")
-                results.append({"paper": source_path, "status": "convert_failed"})
-                continue
+            md_path = source_path.parent / f"{source_path.stem}.md"
+            if md_path.exists():
+                print(f"  ✓ Markdown 已存在: {md_path}")
+            else:
+                # Step 2: 转换 Markdown
+                md_path = parse_to_markdown(source_path)
+                if md_path is None:
+                    print(f"  ✗ Markdown 转换失败，跳过")
+                    results.append({"paper": source_path, "status": "convert_failed"})
+                    continue
 
         # 检查是否已有审稿意见（转换完成后再次检查）
         review_draft = source_path.parent / "review_draft.md"
@@ -332,8 +407,19 @@ def run(args: argparse.Namespace) -> int:
             results.append({"paper": source_path, "status": "already_reviewed"})
             continue
 
-        # Step 3: 生成审稿意见
-        review_text = generate_review(md_path, review_prompt, review_prompt_cn)
+        # 读取 Markdown 内容用于类型检测
+        content = md_path.read_text(encoding="utf-8")
+        if len(content) > 2000:
+            detect_content = content[:2000]
+        else:
+            detect_content = content
+
+        # 检测论文类型
+        detected_type, prompt_file = detect_review_type(detect_content, review_type)
+        print(f"  ℹ 使用审稿模板: {prompt_file} (类型: {detected_type})")
+
+        # 生成审稿意见
+        review_text = generate_review(md_path, detected_type)
         if review_text:
             review_draft.write_text(review_text.strip() + "\n", encoding="utf-8")
             print(f"  ✓ 已保存: {review_draft}")
@@ -382,10 +468,10 @@ def parse_args() -> argparse.Namespace:
         help=f"论文根目录（默认 {PAPER_ROOT}）",
     )
     parser.add_argument(
-        "--review-prompt",
-        type=Path,
+        "--review-type",
+        type=str,
         default=None,
-        help=f"审稿 prompt 文件（默认 {REVIEW_PROMPT_PATH}）",
+        help="审稿类型（auto/paper_en/paper_cn/midterm/proposal/master_thesis/doctor_thesis/fine_reading/critic_mentor/polishing/nsfc，默认 auto 自动检测）",
     )
     parser.add_argument(
         "--max-depth",

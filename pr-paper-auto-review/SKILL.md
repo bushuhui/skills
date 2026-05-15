@@ -1,11 +1,11 @@
 ---
 name: pr-paper-auto-review
-description: 自动审稿工具：扫描论文目录，使用 pi-llm-server 转 Markdown，调用 LLM 生成审稿意见。Use when the user requests paper review, automatic review, or mentions paper review directory.
+description: 自动审稿工具：扫描论文目录，使用 pi-llm-server 转 Markdown，根据论文类型选择对应 prompt 调用 LLM 生成审稿意见。Use when the user requests paper review, automatic review, or mentions paper review directory.
 ---
 
 # Paper Auto Review Skill
 
-自动审稿工具：扫描论文目录，对未审稿的论文自动生成审稿意见。
+自动审稿工具：扫描论文目录，根据论文类型自动选择对应 prompt 生成审稿意见。
 
 ## 触发条件
 - 用户要求审稿、自动审稿、paper review
@@ -13,15 +13,38 @@ description: 自动审稿工具：扫描论文目录，使用 pi-llm-server 转 
 
 ## 配置
 - 审稿脚本：`paper_auto_review.py`（本 skill 目录下）
-- 英文审稿 Prompt：`review_prompt.md`（本 skill 目录下）
-- 中文审稿 Prompt：`review_prompt_cn.md`（本 skill 目录下）
+- Prompt 目录：`prompt/`（本 skill 目录下）
 - 论文根目录：`/home/bushuhui/datacenter/papers/paper-review/`
 - 输出文件：每篇论文目录下的 `review_draft.md`
 
-## 语言检测
-脚本自动检测论文语言：
-- **中文论文**（中文字符占比 > 10%）：使用 `review_prompt_cn.md`，审稿意见为中文
-- **英文论文**：使用 `review_prompt.md`，审稿意见为英文
+## 支持的审稿类型
+
+通过 `--review-type` 参数指定，默认为 `auto`（自动检测）。
+
+| 类型值 | 说明 | Prompt 文件 |
+|--------|------|-------------|
+| `auto` | 自动检测（默认） | 根据内容关键词自动选择 |
+| `paper_en` | 英文论文 | `prompt/paper_review_prompt.md` |
+| `paper_cn` | 中文论文 | `prompt/paper_review_prompt_cn.md` |
+| `midterm` | 中期答辩 | `prompt/中期答辩.md` |
+| `proposal` | 开题答辩 | `prompt/开题答辩.md` |
+| `master_thesis` | 硕士论文 | `prompt/master_thesis.md` |
+| `doctor_thesis` | 博士论文 | `prompt/doctor_thesis.md` |
+| `fine_reading` | 论文精读 | `prompt/paper_fine_reading.md` |
+| `critic_mentor` | 审稿屠夫-润色匠人 | `prompt/critic_mentor_review.md` |
+| `polishing` | 论文润色 | `prompt/academic_polishing.md` |
+| `nsfc` | 自然科学基金申请书 | `prompt/NSFC.md` |
+
+## 自动检测规则
+
+当 `--review-type auto`（默认）时，脚本读取论文内容前 2000 字符，按以下关键词自动判断类型：
+
+- `中期`/`中期报告`/`中期答辩` → `midterm`
+- `开题`/`开题报告`/`开题答辩` → `proposal`
+- `硕士学位论文`/`硕士论文` → `master_thesis`
+- `博士学位论文`/`博士论文` → `doctor_thesis`
+- `自然科学基金申请书`/`NSFC`/`基金申请` → `nsfc`
+- 以上均不匹配时：根据语言检测选择 `paper_cn`（中文字符占比 > 10%）或 `paper_en`
 
 ## 执行流程
 
@@ -32,26 +55,35 @@ cd /home/bushuhui/.agents/skills/pr-paper-auto-review
 python3 paper_auto_review.py --year 2026 --dry-run
 ```
 
-### 2. 批量审稿
+### 2. 批量审稿（自动检测类型）
 ```bash
-# 执行完整流程：扫描 → 转 Markdown → LLM 审稿 → 保存审稿意见
+# 执行完整流程：扫描 → 转 Markdown → 检测类型 → LLM 审稿 → 保存审稿意见
 cd /home/bushuhui/.agents/skills/pr-paper-auto-review
 python3 paper_auto_review.py --year 2026
 ```
 
-### 3. 自定义参数
+### 3. 指定审稿类型
+```bash
+# 强制使用中文论文模板
+python3 paper_auto_review.py --year 2026 --review-type paper_cn
+
+# 强制使用博士论文模板
+python3 paper_auto_review.py --year 2026 --review-type doctor_thesis
+
+# 强制使用论文润色模板
+python3 paper_auto_review.py --year 2026 --review-type polishing
+```
+
+### 4. 自定义参数
 ```bash
 # 指定论文根目录
 python3 paper_auto_review.py --year 2026 --paper-root /path/to/papers
-
-# 指定审稿 prompt
-python3 paper_auto_review.py --year 2026 --review-prompt /path/to/prompt.md
 
 # 指定目录搜索深度（默认 5）
 python3 paper_auto_review.py --year 2026 --max-depth 5
 ```
 
-### 4. 执行约束
+### 5. 执行约束
 - 每篇论文转 Markdown 后随机等待 5-15 秒，避免 API 限流
 - 单篇 LLM 审稿超时 5 分钟（300 秒）
 - 如果某篇失败，记录错误继续下一篇
@@ -59,7 +91,7 @@ python3 paper_auto_review.py --year 2026 --max-depth 5
 - 已有 `review_draft.md` 的论文跳过审稿步骤
 - 论文内容截断上限：200,000 字符（约 64K tokens，适配 qwen3.6-plus 的 128K 上下文窗口）
 
-### 5. 使用 run_review.sh 加载环境变量
+### 6. 使用 run_review.sh 加载环境变量
 脚本依赖 5 个环境变量（`PI_LLM_URL`、`PI_LLM_API_KEY`、`LLM_URL`、`LLM_API_KEY`、`LLM_MODEL`）。使用 `run_review.sh` 自动加载：
 ```bash
 bash run_review.sh --year 2026          # 执行审稿
@@ -67,10 +99,10 @@ bash run_review.sh --year 2026 --dry-run # 预览待审列表
 ```
 该脚本硬编码了正确的 API 地址和 Token，无需手动设置环境变量。
 
-### 6. 推荐使用子 agent 执行
+### 7. 推荐使用子 agent 执行
 审稿耗时较长（每篇 3-10 分钟），建议 spawn 子 agent 避免占用 main session。
 
-### 7. 完成后汇总
+### 8. 完成后汇总
 报告每篇论文的审稿状态（成功/失败/跳过）、输出文件路径。
 
 ## 常见坑
@@ -83,7 +115,7 @@ LLM_API_KEY 或 PI_LLM_API_KEY 可能过期（返回 `invalid_api_key` 或 `Inva
 2. 如果 key 暂时无法更新，跳过自动审稿流程，**直接阅读论文 Markdown 文件后用自身模型能力撰写审稿意见**（保存到 `review_draft.md`）：
    - 先用 pi-llm-server 将 PDF 转为 Markdown（OCR 服务使用独立的 PI_LLM_API_KEY）
    - 读取 `.md` 文件内容
-   - 按 `review_prompt_cn.md`（中文论文）或 `review_prompt.md`（英文论文）的结构撰写审稿意见
+   - 根据论文类型选择 `prompt/` 下对应的 prompt
    - 输出到论文目录下的 `review_draft.md`
 
 ### 1. `patch` 工具对 `.py` 文件可能静默失败

@@ -12,6 +12,16 @@ triggers:
   - rerank
 ---
 
+## ⚠️ Chat/对话模型未接入
+
+**当前服务器无 `/v1/chat/completions` 端点。** 调用会返回 404 错误。
+
+服务网关仅部署了专用小模型（ASR/OCR/Embedding/Reranker/Memory），**未接入任何可用于对话推理的 LLM**（如 Qwen、GPT 等对话模型）。内部转发地址 `127.0.0.1:8092` 上也没有 chat 服务。
+
+如需对话推理，需使用外部 API（如 openai、claude 等），不可依赖 `PI_LLM_URL`。
+
+---
+
 ## 服务概览
 
 统一 LLM 服务网关，支持 4 种服务：

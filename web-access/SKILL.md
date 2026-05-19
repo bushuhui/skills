@@ -160,7 +160,8 @@ curl -s "https://r.jina.ai/<URL>"
 - 适合文章、博客、文档等以正文为核心的页面
 - 返回 Markdown 格式，包含标题、发布时间、正文
 - 对数据面板、商品页等非文章结构页面可能提取到错误区块
-- **已知可用**：今日头条（`m.toutiao.com`）、微信公众号、一般新闻站点
+- **⚠️ 头条已失效验证**（2026-05-19）：`m.toutiao.com` 和 `www.toutiao.com` 的 Jina 抓取均返回空内容，**头条文章应优先使用 CDP（`cdp-grab.js` 或手动 eval）**，Jina 不再作为头条的可靠兜底
+- **已知可用**：微信公众号、一般新闻站点
 
 ### 页面内导航
 
@@ -276,4 +277,4 @@ updated: 2026-03-19
 | `references/cdp-api.md` | CDP 操作完整指南 — 所有命令用法、TreeWalker 提取模板、Jina 兜底 |
 | `references/content-extraction.md` | 动态页面正文提取策略、选择器试探、TreeWalker 回退 |
 | `scripts/cdp-grab.js` | 头条/公众号等动态页面的一键内容抓取（封装完整流程） |
-| `references/site-patterns/{domain}.md` | 确定目标网站后，读取对应站点经验（已知：toutiao.com、mp.weixin.qq.com） |
+| `references/site-patterns/{domain}.md` | 确定目标网站后，读取对应站点经验（已知：toutiao.com、mp.weixin.qq.com、xiaohongshu.com） |

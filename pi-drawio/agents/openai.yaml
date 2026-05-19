@@ -1,0 +1,22 @@
+interface:
+  display_name: "Pi Draw.io"
+  short_description: "Pi Draw.io - Generate .drawio diagrams with 7 visual styles and 15+ diagram types, export to PNG/SVG/PDF/JPG, with self-check and iterative refinement"
+  brand_color: "#2563eb"
+
+policy:
+  allow_implicit_invocation: true
+
+capabilities:
+  - Generate .drawio XML from natural language descriptions
+  - 7 visual styles (Flat Icon, Dark Terminal, Blueprint, Notion Clean, Glassmorphism, Claude Official, OpenAI Official)
+  - 15+ diagram presets (Architecture, Data Flow, Flowchart, Agent, Memory, Sequence, ER, UML Class, State Machine, Use Case, Network, Comparison, Timeline, Mind Map, ML/Deep Learning)
+  - Export to PNG, SVG, PDF, JPG via draw.io desktop CLI
+  - Self-check exported images and auto-fix layout issues
+  - Iterative review loop with targeted XML edits
+  - Browser fallback via diagrams.net URL when CLI unavailable
+  - Animated connectors for data-flow diagrams
+  - Semantic shape vocabulary and arrow semantics
+  - Icon/brand color reference for popular products
+
+prerequisites:
+  - draw.io desktop app (macOS/Linux/Windows)

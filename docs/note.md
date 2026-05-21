@@ -52,3 +52,21 @@ README.md 就留下简要的说明： 本项目的目的，怎么安装（Claude
 
 
 帮我改进一下 pr-paper-auto-review， 增加自然基金(NSFC)的申请书的评价，prompt是 prompt/NSFC.md
+
+
+### 2026-05-20
+
+你帮我仔细读一下 github 的mcp，帮我将这个mcp封装成 一个skill，名字叫 pi-github
+mcp的用法是：
+
+claude mcp add -s user --transport http github \
+  https://api.githubcopilot.com/mcp \
+  -H "Authorization: Bearer YOUR_PAT_HERE"
+
+- `-H` ：通过 Header 传递认证令牌
+- 其中的 `YOUR_PAT_HERE`，可以从环境变量 `GITHUB_TOKEN` 获取
+- 访问 github 网站，可以使用代理，默认的代理是 192.169.1.2:7890
+
+你仔细分析一下所有的工具和功能，把所有的功能尽可能都封装到 skill里面，可以写一个python脚本程序帮助访问网络的mcp工具
+
+

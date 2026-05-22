@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/env python3
 """
 Fetch recent papers from arXiv API for specified categories.
 Output: JSON array of papers to stdout.
@@ -8,10 +8,23 @@ import sys
 import json
 import re
 import html
+import signal
 import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta, timezone
 from urllib.request import urlopen, Request
 import time
+
+# Global timeout: stop 60s before cron's 900s limit
+MAX_RUNTIME = 840
+start_time = time.time()
+
+def check_timeout():
+    if time.time() - start_time > MAX_RUNTIME:
+        print("# Global timeout reached, stopping early", file=sys.stderr)
+        sys.exit(0)
+
+signal.signal(signal.SIGALRM, lambda s, f: sys.exit(0))
+signal.alarm(MAX_RUNTIME)
 
 HOURS = int(sys.argv[1]) if len(sys.argv) > 1 else 24
 
@@ -75,18 +88,29 @@ def is_relevant(title, summary, cats):
 def fetch_category(cat, max_results=100):
     url = f"https://export.arxiv.org/api/query?search_query=cat:{cat}&sortBy=submittedDate&sortOrder=descending&max_results={max_results}"
     req = Request(url, headers={"User-Agent": "DailyResearchPapers/1.0"})
-    for attempt in range(3):
+
+    for attempt in range(4):
+        check_timeout()
         try:
-            data = urlopen(req, timeout=60).read()
+            data = urlopen(req, timeout=15).read()
             break
         except Exception as e:
-            if attempt < 2 and "429" in str(e):
-                print(f"# Rate limited on {cat}, retry {attempt+1}...", file=sys.stderr)
-                time.sleep(15)
+            err = str(e)
+            is_429 = "429" in err
+            is_timeout = "timed out" in err or "timeout" in err.lower()
+
+            if attempt < 3 and (is_429 or is_timeout):
+                wait = 3 * (2 ** attempt)  # 3s, 6s, 12s
+                if is_429:
+                    print(f"# Rate limited on {cat}, retry {attempt+1} (wait {wait}s)...", file=sys.stderr)
+                else:
+                    print(f"# Timeout on {cat}, retry {attempt+1} (wait {wait}s)...", file=sys.stderr)
+                time.sleep(wait)
             else:
-                print(f"# Error fetching {cat}: {e}", file=sys.stderr)
+                print(f"# Error fetching {cat} after {attempt+1} attempts: {e}", file=sys.stderr)
                 return []
 
+    check_timeout()
     root = ET.fromstring(data)
     cutoff = datetime.now(timezone.utc) - timedelta(hours=HOURS)
     papers = []
@@ -149,6 +173,7 @@ def fetch_category(cat, max_results=100):
 def main():
     all_papers = {}
     for cat in CATEGORIES:
+        check_timeout()
         print(f"# Fetching {cat}...", file=sys.stderr)
         papers = fetch_category(cat)
         for p in papers:
@@ -156,11 +181,10 @@ def main():
             if aid not in all_papers:
                 all_papers[aid] = p
             else:
-                # merge categories
                 for c in p["categories"]:
                     if c not in all_papers[aid]["categories"]:
                         all_papers[aid]["categories"].append(c)
-        time.sleep(20)  # arXiv rate limit: increased to 20s to avoid 429
+        time.sleep(10)  # Reduced from 20s: arXiv allows 3 req/s, we send 1 per category
 
     result = sorted(all_papers.values(), key=lambda x: x["published"], reverse=True)
     json.dump(result, sys.stdout, ensure_ascii=False, indent=2)

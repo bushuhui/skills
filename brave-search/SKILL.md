@@ -60,6 +60,19 @@ python3 scripts/brave_search.py "query" --offset 10
 - 支持时间过滤和国家过滤
 - 有 `age` 字段标注结果时效性
 
+## 网络问题排查
+
+**⚠️ Brave API 端口 443 可能不可达**：在某些网络环境下 `api.search.brave.com:443` 连接超时（Connection timed out）。诊断方法：
+
+```bash
+curl -sv --connect-timeout 5 "https://api.search.brave.com/res/v1/web/search?q=test&count=1" \
+  -H "X-Subscription-Token: ${BRAVE_API_KEY}" 2>&1 | grep "connect"
+```
+
+如果显示 `Connection timed out`，说明该端口不可达。回退方案：
+- 使用 `web-access` skill 的 CDP 浏览器通过 Bing/Google 搜索
+- 或直接使用 GitHub Search API（无需外部搜索）
+
 ## 注意事项
 
 - 免费 API 限制：每月 2000 次请求，每秒 1 次

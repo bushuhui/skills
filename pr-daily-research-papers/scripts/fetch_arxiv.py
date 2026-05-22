@@ -160,7 +160,7 @@ def main():
                 for c in p["categories"]:
                     if c not in all_papers[aid]["categories"]:
                         all_papers[aid]["categories"].append(c)
-        time.sleep(8)  # arXiv rate limit: increased to 8s
+        time.sleep(20)  # arXiv rate limit: increased to 20s to avoid 429
 
     result = sorted(all_papers.values(), key=lambda x: x["published"], reverse=True)
     json.dump(result, sys.stdout, ensure_ascii=False, indent=2)

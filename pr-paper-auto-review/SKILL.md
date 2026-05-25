@@ -102,7 +102,19 @@ bash run_review.sh --year 2026 --dry-run # 预览待审列表
 ### 7. 推荐使用子 agent 执行
 审稿耗时较长（每篇 3-10 分钟），建议 spawn 子 agent 避免占用 main session。
 
-### 8. 完成后汇总
+### 8. 手动审稿替代流程（当自动流程不可用时）
+当遇到以下情况时，跳过自动审稿脚本，直接手动撰写审稿意见：
+- 论文 Markdown 文件已存在但不在 `paper-root` 目录体系内
+- LLM API 不可用或 key 过期
+- 需要更灵活、更深入的逐章精读（自动审稿受 token 上限限制，可能遗漏细节）
+
+**手动流程**：
+1. 用 `read_file` 读取论文 Markdown 全文
+2. 加载 `prompt/` 下对应 prompt 作为审稿标准参考
+3. 逐章分析问题，撰写审稿意见（包含：总体评价、逐章问题、写作格式问题、优先级汇总表）
+4. 保存为论文同目录下的 `review_draft.md`
+
+### 9. 完成后汇总
 报告每篇论文的审稿状态（成功/失败/跳过）、输出文件路径。
 
 ## 常见坑
@@ -140,6 +152,9 @@ LLM_API_KEY 或 PI_LLM_API_KEY 可能过期（返回 `invalid_api_key` 或 `Inva
 - 脚本内添加 `print` 覆盖：每行 print 后调用 `sys.stdout.flush()`（脚本顶部已内置 `_flush_print` 补丁）
 - 或直接通过文件系统监控进度：`find ... -name "review_draft.md" -mmin -5`
 - 不要依赖 `PYTHONUNBUFFERED=1` + `stdbuf`，对 bash login shell 无效
+
+## 参考文档
+- **本科论文常见问题**: `references/undergrad-thesis-common-issues.md`（OCR 后典型错误模式、审稿模板结构）
 
 ## 依赖
 - Python 3 + requests

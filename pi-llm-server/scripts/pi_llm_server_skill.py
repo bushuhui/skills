@@ -68,6 +68,9 @@ def transcribe_audio_cmd(audio_path, model="Qwen/Qwen3-ASR-1.7B"):
     语音识别命令行
     输出到源文件所在目录:
         /path/to/audio.txt
+
+    自动格式转换：
+    - M4A → MP3（ASR 后端不支持 M4A，需先转换）
     """
     if audio_path.startswith('http://') or audio_path.startswith('https://'):
         print(f"Downloading from {audio_path}...")
@@ -89,6 +92,34 @@ def transcribe_audio_cmd(audio_path, model="Qwen/Qwen3-ASR-1.7B"):
     src_dir = os.path.dirname(os.path.abspath(audio_path))
     file_name = os.path.basename(audio_path)
     base_name = os.path.splitext(file_name)[0]
+    file_ext = os.path.splitext(file_name)[1].lower()
+
+    # ── M4A 自动转 MP3 ──
+    needs_convert = file_ext in ('.m4a', '.m4b', '.aac', '.flac', '.ogg', '.wma')
+    converted_path = None
+    if needs_convert:
+        mp3_path = os.path.join(src_dir, f"{base_name}_temp.mp3")
+        print(f"  ⚠ {file_ext} 格式需转换为 MP3...")
+        try:
+            result = subprocess.run(
+                ['ffmpeg', '-y', '-i', audio_path, '-codec:a', 'libmp3lame', '-q:a', '2', mp3_path],
+                capture_output=True, text=True, timeout=300
+            )
+            if result.returncode == 0 and os.path.exists(mp3_path):
+                orig_size = os.path.getsize(audio_path)
+                new_size = os.path.getsize(mp3_path)
+                print(f"  ✓ 已转换为 MP3: {orig_size:,} → {new_size:,} bytes")
+                audio_path = mp3_path
+                file_name = os.path.basename(mp3_path)
+                converted_path = mp3_path
+            else:
+                print(f"  ✗ 转换失败 (exit {result.returncode}): {result.stderr[:200]}")
+                print(f"  → 尝试直接提交原始文件...")
+        except FileNotFoundError:
+            print(f"  ✗ ffmpeg 未找到，尝试直接提交原始文件...")
+        except subprocess.TimeoutExpired:
+            print(f"  ✗ 转换超时，尝试直接提交原始文件...")
+
     print(f"Transcribing {file_name}...")
 
     with open(audio_path, 'rb') as f:
@@ -114,6 +145,11 @@ def transcribe_audio_cmd(audio_path, model="Qwen/Qwen3-ASR-1.7B"):
     dst_txt = os.path.join(src_dir, f"{base_name}.txt")
     with open(dst_txt, 'w', encoding='utf-8') as f:
         f.write(text)
+
+    # 清理临时 MP3
+    if converted_path and os.path.exists(converted_path):
+        os.remove(converted_path)
+        print(f"  🗑 已清理临时 MP3")
 
     print(f"  Text: {dst_txt}")
     print(f"  长度：{len(text)} 字符")

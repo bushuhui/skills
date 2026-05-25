@@ -36,13 +36,37 @@ triggers:
 
 Create, edit, and format DOCX documents via CLI tools or direct C# scripts built on OpenXML SDK (.NET).
 
+## Fallback: pandoc for simple conversions
+
+**When .NET SDK is unavailable or env_check fails with `NOT READY`**, and the task is a **simple Markdown → DOCX** conversion (no complex formatting, tables, or template requirements):
+
+```bash
+pandoc input.md -o output.docx
+```
+
+This covers basic reports, letters, and plain documents with headings, paragraphs, lists, and bold/italic text. Limitations: no custom styles, no headers/footers, no complex tables, no images embedded from relative paths.
+
+**Fallback decision rule**:
+- Simple text report from Markdown → pandoc (5 seconds, no deps)
+- Needs styling, tables, headers, images, or template matching → must install .NET first (`bash scripts/setup.sh --minimal`)
+
 ## Setup
 
 **First time:** `bash scripts/setup.sh` (or `powershell scripts/setup.ps1` on Windows, `--minimal` to skip optional deps).
 
 **First operation in session:** `scripts/env_check.sh` — do not proceed if `NOT READY`. (Skip on subsequent operations within the same session.)
 
-## Quick Start: Direct C# Path
+### ⚠️ Fallback: pandoc when .NET is unavailable
+
+If `env_check.sh` reports `[FAIL] dotnet` and you cannot install .NET SDK, **use `pandoc` as a simple fallback** for basic Markdown-to-DOCX conversion:
+
+```bash
+pandoc input.md -o output.docx
+```
+
+This works for plain text + headings + basic formatting. It will **NOT** handle custom styles, complex tables, headers/footers, images, or professional formatting — for those, .NET + OpenXML is required. But for quick report/thesis drafts, pandoc is sufficient.
+
+**Quick Start: Direct C# Path**
 
 When the task requires structural document manipulation (custom styles, complex tables, multi-section layouts, headers/footers, TOC, images), write C# directly instead of wrestling with CLI limitations. Use this scaffold:
 

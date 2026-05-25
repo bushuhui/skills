@@ -1,7 +1,6 @@
 ---
 name: pd-setup
 description: Sets up an `## Agent skills` block in AGENTS.md/CLAUDE.md and `docs/agents/` so the engineering skills know this repo's issue tracker (GitHub or local markdown), triage label vocabulary, and domain doc layout. Run before first use of `pd-to-issues`, `pd-to-prd`, `pd-triage`, `pd-diagnose`, `pd-tdd`, `pd-improve-codebase-architecture`, or `pd-zoom-out` — or if those skills appear to be missing context about the issue tracker, triage labels, or domain docs.
-disable-model-invocation: true
 ---
 
 # Setup Matt Pocock's Skills

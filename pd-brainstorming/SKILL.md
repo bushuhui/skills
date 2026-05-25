@@ -1,23 +1,44 @@
 ---
 name: pd-brainstorming
-description: 深度头脑风暴 + 设计追问 — 把模糊想法变成完整设计方案。Use when 分析需求、规划任务、讨论设计方案、需要把想法想透想彻底、或者用户提到 brainstorming/头脑风暴/grill me。最终方案保存到 docs/RAD.md。
+description: 深度头脑风暴 + 设计追问 — 把模糊想法变成完整设计方案。Use when 分析需求、规划任务、讨论设计方案、需要把想法想透想彻底、或者用户提到 brainstorming/头脑风暴/grill me。最终方案保存到 `.scratch/<feature>/RAD.md`。
 trigger: /pd-brainstorming
 ---
 
 # /pd-brainstorming
 
-融合渐进式设计（brainstorming）与深度追问（grill-me），把模糊想法变成经过充分推敲的完整设计方案，并记录到 `docs/RAD.md`。
+融合渐进式设计（brainstorming）与深度追问（grill-me），把模糊想法变成经过充分推敲的完整设计方案，并记录到 `.scratch/<feature>/RAD.md`。
 
 ## 工作流程
 
-### 阶段 1：理解上下文
+### 阶段 0：前置检查（pd-setup）——【必须先执行，禁止跳过】
+
+**这是强制性步骤。在进入阶段1之前，必须通过以下检查：**
+
+1. 检测当前项目是否已经执行过 `/pd-setup`
+    - 检查依据：`CLAUDE.md` 或 `AGENTS.md` 中存在 `## Agent skills` 区块，且 `docs/agents/` 目录存在
+2. 如果上述检查条件**任一不满足**，则**必须通过 Skill 工具调用 `pd-setup`**：
+    - 使用 `Skill({skill: "pd-setup"})` 执行初始化
+    - **等待其完成**（`pd-setup` 可能需要用户交互确认 issue tracker、labels 等配置）
+    - 确认 `CLAUDE.md`/`AGENTS.md` 中已出现 `## Agent skills` 区块且 `docs/agents/` 目录已生成
+3. **严禁**在未确认 `/pd-setup` 已完成的情况下进入阶段1
+
+### 阶段 1：确定功能名
+
+- **前提**：确认阶段0已执行完毕（`CLAUDE.md` 中存在 `## Agent skills` 区块，且 `docs/agents/` 目录存在）
+
+- 根据用户需求提取简短的功能名（kebab-case，如 `user-auth`、`payment-flow`）
+- 如果不明确，先向用户确认功能名
+- 创建 `.scratch/<feature>/` 目录（如果不存在）
+
+### 阶段 2：理解上下文
 
 - 先查看项目当前状态（文件结构、docs、近期变更）
     - 如果存在 `docs/architecture.md`， `docs/api.md`， `docs/changelog.md` 则读取这些文档
+    - 如果存在 `.scratch/<feature>/previous-RAD.md` 或历史方案，也一并读取
 - 了解用户想法的**目的**、**约束**、**成功标准**
 - 不明确的地方开始追问
 
-### 阶段 2：深度追问（Grill 模式）
+### 阶段 3：深度追问（Grill 模式）
 
 对每个关键决策点进行深度追问，确保想法被充分推敲：
 
@@ -28,7 +49,7 @@ trigger: /pd-brainstorming
 - **每个问题给出推荐答案**，不要只问不给建议
 - **不留模糊地带**，无法确定的部分注明"待进一步分析"
 
-### 阶段 3：探索方案
+### 阶段 4：探索方案
 
 - 提出 2-3 种不同的实现方案
 - 每种方案列出**权衡取舍**
@@ -36,19 +57,19 @@ trigger: /pd-brainstorming
 - **YAGNI 原则**：砍掉所有不必要的功能
 - **探索替代方案**：永远不要只给一个选项就定下来
 
-### 阶段 4：渐进式呈现设计
+### 阶段 5：渐进式呈现设计
 
 - 理解要做什么之后，分段呈现设计（尽可能详细）
 - 每段结束后**停下来确认**是否合理
 - 覆盖：架构、组件、数据流、错误处理、测试策略
 - 随时准备回退澄清
 
-### 阶段 5：确认并保存方案
+### 阶段 6：确认并保存方案
 
-用户确认设计方案后，将完整方案保存到 `docs/RAD.md`：
+用户确认设计方案后，将完整方案保存到 `.scratch/<feature>/RAD.md`：
 
-- 如果 `docs/` 不存在则创建
-- 如果 `docs/RAD.md` 不存在则创建
+- 如果 `.scratch/<feature>/` 不存在则创建
+- 如果 `.scratch/<feature>/RAD.md` 不存在则创建
 - **按时间倒序追加**，每次记录为一个独立 section：
 
 ```markdown
@@ -68,14 +89,14 @@ trigger: /pd-brainstorming
 - 放弃了 YY 方案，因为 ...
 
 ### 待办事项
-- [ ] 待进一步分析的内容
+- 待进一步分析的内容
 ```
 
-方案已保存到 `docs/RAD.md`。根据当前状态引导用户下一步：
+方案已保存到 `.scratch/<feature>/RAD.md`。根据当前状态引导用户下一步：
 
 - **需要对方案进行压力测试和术语打磨** → 运行 `/pd-grill-with-docs`（它会用项目的领域模型和已有 ADR 来挑战当前方案，修正术语、补充边界条件）
 - **想快速验证关键设计决策的可行性** → 运行 `/pd-prototype`（构建可交互的 throwaway 原型，验证状态机、UI 布局或数据模型）
-- **方案已确定，需要转化为可执行需求文档** → 运行 `/pd-to-prd`（读取 `docs/RAD.md`，合成结构化 PRD 并发布到 issue tracker）
+- **方案已确定，需要转化为可执行需求文档** → 运行 `/pd-to-prd`（读取 `.scratch/<feature>/RAD.md`，合成结构化 PRD 并发布到 issue tracker）
 - **PRD 已发布，需要拆分为独立 issue** → 运行 `/pd-to-issues`（将 PRD 拆分为垂直切片，发布为可被 AFK agent 执行的独立 issue）
 
 ## 关键原则

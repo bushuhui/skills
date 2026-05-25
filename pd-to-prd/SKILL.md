@@ -9,19 +9,19 @@ The issue tracker and triage label vocabulary should have been provided to you �
 
 ## Process
 
-1. Read `docs/RAD.md` if it exists — it contains the outcomes of a prior brainstorming or grilling session. Use it as the primary source for the PRD rather than starting from scratch.
+1. Read `.scratch/<feature>/RAD.md` if it exists — it contains the outcomes of a prior brainstorming or grilling session. Use it as the primary source for the PRD rather than starting from scratch.
 
-Map `docs/RAD.md` sections to PRD fields:
+If no `.scratch/<feature>/RAD.md` exists for any feature, fall back to `docs/RAD.md` for backwards compatibility. If neither exists, synthesize from the current conversation context.
 
-| `docs/RAD.md` section | → PRD section | How to transform |
+Map `.scratch/<feature>/RAD.md` sections to PRD fields:
+
+| `.scratch/<feature>/RAD.md` section | → PRD section | How to transform |
 |---|---|---|
 | 需求分析 | Problem Statement & Solution | Synthesize into user-facing problem + solution |
 | 架构与方案 | Implementation Decisions | Remove file paths/line numbers; keep interfaces, types, config shapes |
 | 决策记录 | Implementation Decisions | Preserve decisions and rationale as-is |
 | 待办事项 | User Stories / Out of Scope | Actionable items → user stories; blocked/deferred items → out of scope |
 | 需要考虑的细节 | Further Notes | Direct mapping |
-
-If `docs/RAD.md` does not exist, fall back to synthesizing from the current conversation context.
 
 2. Explore the repo to understand the current state of the codebase, if you haven't already. Use the project's domain glossary vocabulary throughout the PRD, and respect any ADRs in the area you're touching.
 

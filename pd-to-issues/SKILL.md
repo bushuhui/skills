@@ -86,5 +86,6 @@ Do NOT close or modify any parent issue.
 
 Once all issues are published, guide the user to the next step:
 
-- **Ready to start implementing** → pick an issue marked `ready-for-agent` with no blockers and start building (use `/pd-tdd` for test-driven development, or `/pd-diagnose` for debugging)
+- **Want to batch-execute all issues automatically (Recommended)** → run `/pd-execution` (scans incomplete issues, resolves dependency order, implements and verifies each one, and marks them as completed)
+- **Ready to start implementing manually** → pick an issue marked `ready-for-agent` with no blockers and start building (use `/pd-tdd` for test-driven development, or `/pd-diagnose` for debugging)
 - **Want to validate the riskiest design decision before coding** → run `/pd-prototype` on the first blocker slice, then implement once validated

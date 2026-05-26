@@ -89,7 +89,7 @@ trigger: /pd-brainstorming
 - 放弃了 YY 方案，因为 ...
 
 ### 待办事项
-- 待进一步分析的内容
+- [ ] 待进一步分析的内容
 ```
 
 方案已保存到 `.scratch/<feature>/RAD.md`。根据当前状态引导用户下一步：

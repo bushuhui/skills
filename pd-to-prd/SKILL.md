@@ -23,17 +23,40 @@ Map `.scratch/<feature>/RAD.md` sections to PRD fields:
 | 待办事项 | User Stories / Out of Scope | Actionable items → user stories; blocked/deferred items → out of scope |
 | 需要考虑的细节 | Further Notes | Direct mapping |
 
-2. Explore the repo to understand the current state of the codebase, if you haven't already. Use the project's domain glossary vocabulary throughout the PRD, and respect any ADRs in the area you're touching.
+2. Resolve open items from RAD
 
-3. Sketch out the major modules you will need to build or modify to complete the implementation. Actively look for opportunities to extract deep modules that can be tested in isolation.
+After reading the RAD, inspect the `### 待办事项` section. Every item must fall into exactly one of these three categories BEFORE proceeding:
+
+1. **Actionable** → Will be turned into User Stories or Implementation Decisions in the PRD
+2. **Deferred / out of scope** → Will be moved to `## Out of Scope` in the PRD
+3. **Unresolved / "待进一步分析" / TBD** → **MUST be resolved now.** Ask the user for the decision, record it in the PRD. Do NOT leave "待细化" or "TBD" markers in the PRD.
+
+If any item cannot be resolved immediately, **STOP and do not generate the PRD.** Tell the user which items are blocking and what decisions are needed.
+
+After resolving the open items, **synchronize the changes back to `RAD.md`**:
+- For each resolved item, update its checklist status: `- [ ]` → `- [x]`
+- Append a resolution note after the item, e.g. `→ 已确认：采用XX方案，写入 PRD Implementation Decisions` or `→ 已确认：归入 Out of Scope`
+- If the item was reclassified (e.g. deferred), note the new classification
+- Write the updated content back to `.scratch/<feature>/RAD.md` (overwrite in-place)
+
+3. Explore the repo to understand the current state of the codebase, if you haven't already. Use the project's domain glossary vocabulary throughout the PRD, and respect any ADRs in the area you're touching.
+
+4. Sketch out the major modules you will need to build or modify to complete the implementation. Actively look for opportunities to extract deep modules that can be tested in isolation.
 
 A deep module (as opposed to a shallow module) is one which encapsulates a lot of functionality in a simple, testable interface which rarely changes.
 
 Check with the user that these modules match their expectations. Check with the user which modules they want tests written for.
 
-4. Write the PRD using the template below, then publish it to the project issue tracker. Apply the `ready-for-agent` triage label - no need for additional triage.
+5. Write the PRD using the template below.
 
-Once the PRD is published, guide the user to the next step:
+6. Save the PRD to `.scratch/<feature>/PRD.md`:
+   - If `.scratch/<feature>/` does not exist, create it
+   - Write the full PRD content to `.scratch/<feature>/PRD.md` (overwrite if it already exists)
+   - This file serves as the local canonical source of the PRD
+
+7. Publish the PRD to the project issue tracker. Apply the `ready-for-agent` triage label - no need for additional triage.
+
+Once the PRD is saved and published, guide the user to the next step:
 
 - **If the PRD needs to be broken into independently-grabbable issues** → run `/pd-to-issues` (splits the PRD into vertical tracer-bullet slices, each a complete end-to-end issue that an AFK agent can pick up)
 - **If key design decisions need validation before committing** → run `/pd-prototype` (builds a throwaway prototype to verify the riskiest assumptions)

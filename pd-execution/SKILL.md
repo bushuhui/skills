@@ -17,7 +17,33 @@ Read `docs/agents/issue-tracker.md` to confirm the tracker layout. For local mar
 
 Glob for all `.md` files in each `.scratch/*/issues/` directory. Read every issue file to get its full content.
 
-### 2. Assess completion status
+### 2. Assess completion status and resume interrupted work
+
+For each issue file, check:
+
+- **Explicit completion marker**: Look for a `## Completed` section with a date. If present, the issue is done — skip it.
+- **Acceptance criteria**: Count how many `- [ ]` (unchecked) vs `- [x]` (checked) boxes exist. If ALL are checked and there's a completion marker, skip.
+- **Implicit completion**: If all acceptance criteria appear satisfied based on codebase verification (grep for the described behavior), flag it as "appears done but not marked" — the user can confirm.
+- **Interrupted work**: Look for a `## In Progress` section. If present **without** a `## Completed` section, this issue was previously started but not finished (e.g., session timed out, crash, or user exited). Capture:
+  - The `Started` timestamp
+  - The `Step` field (which sub-step it was in)
+  - Any `Notes` about what was already done
+
+Present a summary table:
+
+| # | Issue | Status | Blocked by |
+|---|-------|--------|------------|
+| 01 | Map loading | ✅ Completed | — |
+| 02 | A* pathfinding | ⚠️ Appears done, not marked | 01 |
+| 03 | LiDAR scanning | ❌ Incomplete | 01 |
+| 04 | Dynamic replanning | 🔄 Interrupted (Step: implementing) | 03 |
+
+**Resumption strategy**:
+- If interrupted issues exist, **ask the user** whether to resume from where it left off or restart from scratch.
+- If resuming: skip the "Read" and "Verify current state" steps for that issue (already done), jump directly to the recorded `Step`.
+- If restarting: remove the `## In Progress` section and treat as a fresh issue.
+
+### 3. Resolve dependency order
 
 For each issue file, check:
 
@@ -54,24 +80,76 @@ For each issue in dependency order:
 
 **a. Read the issue fully** — understand the acceptance criteria and what to build.
 
-**b. Verify current state** — explore the codebase to see what's already implemented vs what's missing.
+**b. Write "In Progress" marker** — immediately after reading, append to the issue file:
 
-**c. Report findings** — tell the user:
+```markdown
+## In Progress
+
+- **Started**: YYYY-MM-DD HH:MM
+- **Step**: analyzing
+- **Notes**: What has been understood so far (key acceptance criteria, constraints)
+```
+
+This marker serves as a progress checkpoint. If execution is interrupted, the next run of `/pd-execution` will detect this marker and offer to resume.
+
+**c. Verify current state** — explore the codebase to see what's already implemented vs what's missing.
+
+**d. Update marker → Step: reporting** — update the `## In Progress` section:
+
+```markdown
+## In Progress
+
+- **Started**: YYYY-MM-DD HH:MM
+- **Step**: reporting
+- **Notes**: What already exists, what's missing, proposed approach
+```
+
+**e. Report findings** — tell the user:
   - What already exists (if anything)
   - What needs to be built
   - Your implementation approach
 
-**d. Wait for confirmation** — ask the user if the approach looks right before coding.
+**f. Determine confirmation strategy** — judge whether the issue is "execution-ready" (sufficiently specified to implement without human confirmation):
 
-**e. Implement** — write the code, following the project's development principles (KISS, SOLID, single responsibility, minimal change scope).
+  An issue is **execution-ready** only when ALL of the following are true:
+  1. **Has `## Acceptance Criteria`** with `- [ ]` checklist items (explicit, verifiable criteria)
+  2. **Has `## Blocked by`** section (dependency context is documented)
+  3. **Has `## Parent` or references a parent issue/PRD** (upstream design context exists — this is the strongest signal of `pd-to-issues` origin; hand-written issues rarely include this)
+  4. **A PRD or RAD exists in the same feature directory** (`.scratch/<feature>/PRD.md` or `RAD.md`) — confirms this issue came from a structured design workflow
+  5. **No open questions or "TBD" / "待确认" markers** in the issue body — everything is already decided
 
-**f. Verify acceptance criteria** — after implementation, verify each criterion:
+  - **If ALL 5 conditions are met** → **execution-ready**: skip confirmation and proceed directly to implementation. The issue has already been grilled and approved during the design phase.
+  - **If ANY condition is missing** → **needs confirmation**: report your findings and wait for the user to confirm the approach before coding.
+
+**g. Update marker → Step: implementing** — before writing code, update the `## In Progress` section:
+
+```markdown
+## In Progress
+
+- **Started**: YYYY-MM-DD HH:MM
+- **Step**: implementing
+- **Notes**: Approach confirmed, beginning implementation
+```
+
+**h. Implement** — write the code, following the project's development principles (KISS, SOLID, single responsibility, minimal change scope).
+
+**i. Update marker → Step: verifying** — before verification, update the `## In Progress` section:
+
+```markdown
+## In Progress
+
+- **Started**: YYYY-MM-DD HH:MM
+- **Step**: verifying
+- **Notes**: Implementation complete, running verification
+```
+
+**j. Verify acceptance criteria** — after implementation, verify each criterion:
   - For code behavior: run the relevant commands/tests
   - For API endpoints: curl the endpoint
   - For UI: use browser tools or manual verification
   - For format/structure: grep the codebase
 
-**g. Mark as completed** — append a completion section to the issue file:
+**k. Mark as completed** — append a completion section to the issue file, then **remove the `## In Progress` section**:
 
 ```markdown
 ## Completed
@@ -85,7 +163,9 @@ For each issue in dependency order:
 
 Also convert all remaining `- [ ]` acceptance criteria to `- [x]` in the original section.
 
-**h. Move to next issue** — repeat until all incomplete issues are done.
+**l. Remove `## In Progress` marker** — delete the `## In Progress` section from the issue file. The issue now has a clean `## Completed` section as the final state.
+
+**m. Move to next issue** — repeat until all incomplete issues are done.
 
 ### 5. Done
 
@@ -104,7 +184,7 @@ Guide the user:
 ## Safety rules
 
 - **Never execute destructive operations** (git reset --hard, rm -rf, force push) without explicit user confirmation
-- **Show the plan before coding** — especially for the first issue, so the user can redirect if your understanding is wrong
+- **Show the plan before coding** — especially for the first issue or unstructured issues, so the user can redirect if your understanding is wrong. For structured issues generated by `pd-to-issues`, the plan has already been vetted; proceed directly to implementation.
 - **Respect existing code** — don't rewrite working code just because your approach differs
 - **One issue at a time** — complete and verify one before starting the next
 - **If stuck, ask** — if an acceptance criteria is ambiguous or can't be satisfied, flag it to the user rather than making assumptions

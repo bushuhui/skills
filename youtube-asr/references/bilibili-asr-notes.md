@@ -49,6 +49,66 @@ curl -s "https://api.bilibili.com/x/player/v2?cid=<cid>&bvid=<bvid>"
 2. yt-dlp 下载音频（无需 cookies）
 3. pi-llm-server ASR 转写
 
+## ⚠️ yt-dlp 失败时的 API 降级方案
+
+**问题**: 部分 B站视频 yt-dlp 报 `ERROR: No video formats found`，即使 yt-dlp 已是最新版本。
+
+**原因**: B站对部分视频（尤其是较新或受限内容）的格式接口做了限制，yt-dlp 无法解析。
+
+**解决方案**: 通过 B站 API 直接获取 DASH 流地址下载：
+
+```python
+import requests, subprocess, re
+
+# 1. 从 Chrome CDP 获取 cookies（B站 API 需要登录态 cookies）
+result = subprocess.run(
+    ['node', '/home/bushuhui/.agents/skills/web-access/scripts/cdp-cli.mjs', 'eval', '<targetId>', 'document.cookie'],
+    capture_output=True, text=True
+)
+cookie_str = result.stdout.strip()
+
+bvid = 'BV1UfGo6GEVR'
+cid = '38606145230'  # 从 /x/web-interface/view?bvid=XXX API 获取
+
+headers = {
+    'Cookie': cookie_str,
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+    'Referer': f'https://www.bilibili.com/video/{bvid}/',
+}
+
+# 2. 获取播放地址（DASH 格式）
+r = requests.get('https://api.bilibili.com/x/player/playurl', params={
+    'bvid': bvid, 'cid': cid, 'qn': 80, 'fnval': 16, 'fourk': 1,
+}, headers=headers)
+dash = r.json()['data']['dash']
+audio_url = max(dash['audio'], key=lambda x: x.get('bandwidth', 0))['baseUrl']
+video_url = max(dash['video'], key=lambda x: x.get('bandwidth', 0))['baseUrl']
+
+# 3. 下载音频流
+headers2 = {
+    'Cookie': cookie_str,
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+    'Referer': 'https://www.bilibili.com/',
+    'Origin': 'https://www.bilibili.com',
+}
+host_match = re.search(r'https://([^/]+)', audio_url)
+if host_match:
+    headers2['Host'] = host_match.group(1)
+
+resp = requests.get(audio_url, headers=headers2, timeout=120)
+with open('audio.m4s', 'wb') as f:
+    f.write(resp.content)
+
+# 4. 转 MP3
+# ffmpeg -y -i audio.m4s -q:a 0 -map a audio.mp3
+```
+
+**注意事项**:
+- mcdn CDN 节点（`*.mcdn.bilivideo.cn`）需要在请求头中设置 `Host` 字段
+- 音频为 `.m4s` 格式，需 ffmpeg 转 mp3
+- CID 可通过 `api.bilibili.com/x/web-interface/view?bvid=XXX` 获取
+- 视频流和音频流分开下载，如需合并：`ffmpeg -i video.m4s -i audio.m4s -c copy output.mp4`
+
 ## ASR 转写
 
 ### 使用 pi-llm-server

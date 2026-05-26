@@ -161,7 +161,44 @@ yt-dlp -x --audio-format mp3 -o "output.%(ext)s" "https://www.bilibili.com/video
 - `--write-sub --all-subs` 在无 cookies 时只会下载弹幕（danmaku.xml）
 - B站 API 字幕接口 `api.bilibili.com/x/player/v2?cid=<cid>&bvid=<bvid>` 可能超时
 - 短链接 `b23.tv/xxx` 需先通过浏览器访问获取真实 BV 号
-- **最佳实践**：浏览器打开页面获取信息 → yt-dlp 下载音频 → pi-llm-server ASR 转写
+
+**⚠️ yt-dlp 下载失败兜底方案**（2026-05-26 实测确认）：
+yt-dlp 有时会返回 `ERROR: No video formats found!`（BV1UfGo6GEVR、BV1KoGE6cE53 均遇到过）。此时需用 **CDP + API 直接下载**：
+
+```python
+import requests, re, subprocess, json
+
+# 1. 通过 CDP 获取 B站 cookies
+result = subprocess.run(
+    ['node', '<web-access-skill-dir>/scripts/cdp-cli.mjs', 'eval', '<targetId>', 'document.cookie'],
+    capture_output=True, text=True
+)
+cookie_str = result.stdout.strip()
+
+# 2. 调用 Bilibili playurl API 获取音频 URL
+headers = {'Cookie': cookie_str, 'User-Agent': 'Mozilla/5.0', 'Referer': f'https://www.bilibili.com/video/{bvid}/'}
+r = requests.get('https://api.bilibili.com/x/player/playurl', params={
+    'bvid': bvid, 'cid': cid, 'qn': 80, 'fnval': 16, 'fourk': 1
+}, headers=headers)
+dash = r.json()['data']['dash']
+audio_url = max(dash['audio'], key=lambda x: x.get('bandwidth', 0))['baseUrl']
+
+# 3. 下载音频（必须提取 Host header，CDN 会验证）
+headers2 = {**headers, 'Referer': 'https://www.bilibili.com/', 'Origin': 'https://www.bilibili.com'}
+host_match = re.search(r'https://([^/]+)', audio_url)
+if host_match:
+    headers2['Host'] = host_match.group(1)
+resp = requests.get(audio_url, headers=headers2, timeout=180)
+with open('audio.m4s', 'wb') as f:
+    f.write(resp.content)
+```
+
+**关键点**：
+- mcdn CDN URL 需要携带 `Host` header（从 URL 中解析域名），否则可能返回空内容
+- 下载的是 `.m4s` 格式，需 `ffmpeg -i audio.m4s -q:a 0 -map a audio.mp3` 转换
+- 视频流同样可通过 `dash['video']` 获取
+
+- **最佳实践**：浏览器打开页面获取信息 → 尝试 yt-dlp 下载 → 失败则 API 兜底 → ffmpeg 转 mp3 → pi-llm-server ASR 转写
 
 详见 `references/bilibili-asr-notes.md`。
 

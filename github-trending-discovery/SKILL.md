@@ -92,7 +92,7 @@ Markdown table with columns: #, Project (link), Stars (+ Forks), Description, La
 ### 6. Save to Knowledge Base
 
 ```
-/home/a409/knowledge_base/note/pi-lab/Clippings/YYYYMM/GitHub-Trending/trending-YYYYMMDD.md
+`${GITHUB_TRENDING_KB_DIR}/YYYYMM/GitHub-Trending/trending-YYYYMMDD.md`（默认 `~/knowledge_base/note/pi-lab/Clippings/`）
 ```
 
 Update daily index file `Clippings/YYYYMM/YYYYMMDD.md`.
@@ -101,12 +101,29 @@ Update daily index file `Clippings/YYYYMM/YYYYMMDD.md`.
 
 The reusable script is at `scripts/github_trending.py` within this skill directory. Execute with:
 
+> `${SKILL_DIR}` refers to this skill's actual directory path. Replace with the real path before executing.
+
 ```bash
-python3 /home/bushuhui/.hermes/skills/github-trending-discovery/scripts/github_trending.py
+# 默认模式：当天+本周+本月三合一汇总（推荐）
+python3 "${SKILL_DIR}/scripts/github_trending.py"
+
+# 单周期模式 — 仅当天
+python3 "${SKILL_DIR}/scripts/github_trending.py" --source trending --period daily
+
+# 单周期模式 — 仅本周
+python3 "${SKILL_DIR}/scripts/github_trending.py" --source trending --period weekly
+
+# 单周期模式 — 仅本月
+python3 "${SKILL_DIR}/scripts/github_trending.py" --source trending --period monthly
+
+# API 搜索模式（原有功能，搜索最近创建的高 star 仓库）
+python3 "${SKILL_DIR}/scripts/github_trending.py" --source api --days 4
 ```
 
 The script:
-- Searches repos created in last 4 days (via GitHub Search API)
+- **默认模式（all）**: 依次抓取 `https://github.com/trending`、`?since=weekly`、`?since=monthly`，汇总为一份报告
+- **Trending 单周期模式**: 从 `https://github.com/trending` 页面抓取，通过 `--period` 指定时间维度
+- **API 搜索模式**: 搜索 repos created in last N days (via GitHub Search API)
 - Fetches detailed info for each repo (via `/repos/{owner}/{name}` API)
 - Filters SEO spam with a **scoring system** (score ≥ 2 → skip)
   - Checks: "2026" year spam, emoji stuffing, crack/bypass terms, platform stuffing, comma piles, repetitive text, specific spam patterns (casino/bonus/booster/uncensored), star/fork ratio anomaly
@@ -124,7 +141,7 @@ When downloading repos from search results:
 
 ```bash
 # 1. Try clone with timeout + no-prompt
-cd /home/a409/knowledge_base/codebase
+cd ~/knowledge_base/codebase
 GIT_TERMINAL_PROMPT=0 timeout 60 git clone https://github.com/{owner}/{repo}.git 2>&1
 
 # 2. If "destination path already exists", just cd in and git pull

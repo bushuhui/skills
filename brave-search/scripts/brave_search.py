@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """Brave Search API wrapper — web search & news search."""
 
+from __future__ import annotations
+from typing import List, Dict
+
 import sys
 import json
 import os
@@ -11,8 +14,15 @@ import requests
 
 API_KEY = os.environ.get("BRAVE_API_KEY", "")
 BASE_URL = "https://api.search.brave.com/res/v1"
-PROXY_URL = os.environ.get("HTTPS_PROXY") or os.environ.get("HTTP_PROXY") or os.environ.get("ALL_PROXY")
-PROXIES = {"https": PROXY_URL, "http": PROXY_URL} if PROXY_URL else None
+
+# Proxy: use env var if set, otherwise fallback to common local proxy
+PROXY_URL = (
+    os.environ.get("HTTPS_PROXY")
+    or os.environ.get("HTTP_PROXY")
+    or os.environ.get("ALL_PROXY")
+    or "http://127.0.0.1:7890"
+)
+FALLBACK_PROXIES = {"https": PROXY_URL, "http": PROXY_URL}
 
 HEADERS = {
     "Accept": "application/json",
@@ -20,8 +30,24 @@ HEADERS = {
     "X-Subscription-Token": API_KEY,
 }
 
+# Detect whether we need proxy: try once, then cache result
+_proxy_required = None
 
-def search_web(query: str, count: int = 10, offset: int = 0, freshness: str = None, country: str = None) -> list[dict]:
+
+def _get_proxies():
+    """Return proxies dict, auto-detecting whether proxy is needed."""
+    global _proxy_required
+    if _proxy_required is None:
+        # Try direct connection with a short timeout
+        try:
+            requests.get(f"{BASE_URL}/web/search", headers=HEADERS, params={"q": "test", "count": 1}, timeout=5)
+            _proxy_required = False
+        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
+            _proxy_required = True
+    return FALLBACK_PROXIES if _proxy_required else None
+
+
+def search_web(query: str, count: int = 10, offset: int = 0, freshness: str = None, country: str = None) -> List[Dict]:
     """Brave Web Search API."""
     params = {"q": query, "count": min(count, 20)}
     if offset:
@@ -31,7 +57,8 @@ def search_web(query: str, count: int = 10, offset: int = 0, freshness: str = No
     if country:
         params["country"] = country
     try:
-        r = requests.get(f"{BASE_URL}/web/search", headers=HEADERS, params=params, proxies=PROXIES, timeout=15)
+        proxies = _get_proxies()
+        r = requests.get(f"{BASE_URL}/web/search", headers=HEADERS, params=params, proxies=proxies, timeout=15)
         r.raise_for_status()
         data = r.json()
         results = []
@@ -49,7 +76,7 @@ def search_web(query: str, count: int = 10, offset: int = 0, freshness: str = No
         return [{"error": str(e)}]
 
 
-def search_news(query: str, count: int = 10, freshness: str = None, country: str = None) -> list[dict]:
+def search_news(query: str, count: int = 10, freshness: str = None, country: str = None) -> List[Dict]:
     """Brave News Search API."""
     params = {"q": query, "count": min(count, 20)}
     if freshness:
@@ -57,7 +84,8 @@ def search_news(query: str, count: int = 10, freshness: str = None, country: str
     if country:
         params["country"] = country
     try:
-        r = requests.get(f"{BASE_URL}/news/search", headers=HEADERS, params=params, proxies=PROXIES, timeout=15)
+        proxies = _get_proxies()
+        r = requests.get(f"{BASE_URL}/news/search", headers=HEADERS, params=params, proxies=proxies, timeout=15)
         r.raise_for_status()
         data = r.json()
         results = []

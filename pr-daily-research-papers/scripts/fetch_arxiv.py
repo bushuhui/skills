@@ -1,4 +1,4 @@
-#!/usr/env python3
+#!/usr/bin/env python3
 """
 Fetch recent papers from arXiv API for specified categories.
 Output: JSON array of papers to stdout.

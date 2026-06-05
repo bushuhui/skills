@@ -325,7 +325,8 @@ def generate_review(markdown_path: Path, review_type: str) -> str | None:
             {"role": "user", "content": user_message},
         ],
         "temperature": 0.3,
-        "max_tokens": 8000,
+        "max_tokens": 4000,
+        "stream": True,
     }
 
     try:
@@ -333,7 +334,8 @@ def generate_review(markdown_path: Path, review_type: str) -> str | None:
             f"{LLM_URL}/chat/completions",
             headers=LLM_HEADERS,
             json=payload,
-            timeout=300,
+            timeout=900,
+            stream=True,
         )
     except Exception as e:
         print(f"  ✗ LLM 请求失败: {e}")
@@ -343,8 +345,30 @@ def generate_review(markdown_path: Path, review_type: str) -> str | None:
         print(f"  ✗ LLM 返回错误: HTTP {resp.status_code} - {resp.text[:200]}")
         return None
 
-    result = resp.json()
-    review = result.get("choices", [{}])[0].get("message", {}).get("content", "")
+    # 流式接收审稿意见
+    review = ""
+    chunk_count = 0
+    for line in resp.iter_lines():
+        if not line:
+            continue
+        line_str = line.decode("utf-8")
+        if not line_str.startswith("data: "):
+            continue
+        data_str = line_str[6:]
+        if data_str.strip() == "[DONE]":
+            break
+        try:
+            import json
+            data = json.loads(data_str)
+            delta = data.get("choices", [{}])[0].get("delta", {})
+            content = delta.get("content", "")
+            if content:
+                review += content
+                chunk_count += 1
+                if chunk_count % 20 == 0:
+                    print(f"  ... 已接收 {len(review)} 字符")
+        except Exception:
+            continue
 
     if not review:
         print(f"  ✗ LLM 返回空内容")

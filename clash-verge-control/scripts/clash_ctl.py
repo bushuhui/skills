@@ -10,7 +10,7 @@ import urllib.parse
 import urllib.error
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
-API_BASE = "http://192.168.1.2:9098"
+API_BASE = "http://192.168.1.15:9098"
 
 
 def api_get(path):

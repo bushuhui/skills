@@ -5,7 +5,7 @@ description: 管理 Clash Verge 代理节点 — 查询节点/延迟、按国家
 
 # Clash Verge Control
 
-通过内置 CLI 脚本管理 Clash Verge 代理，Clash API 默认运行在 `192.168.1.2:9098`。
+通过内置 CLI 脚本管理 Clash Verge 代理，Clash API 默认运行在 `192.168.1.15:9098`。
 
 ## 快速使用
 
@@ -13,22 +13,22 @@ description: 管理 Clash Verge 代理节点 — 查询节点/延迟、按国家
 
 ```bash
 # ⚠️ 注意：--api 是全局参数，必须放在子命令之前，不能放在后面！
-# 正确：python3 scripts/clash_ctl.py --api http://192.168.1.2:9098 status
-# 错误：python3 scripts/clash_ctl.py status --api http://192.168.1.2:9098  （会报 unrecognized arguments）
+# 正确：python3 scripts/clash_ctl.py --api http://192.168.1.15:9098 status
+# 错误：python3 scripts/clash_ctl.py status --api http://192.168.1.15:9098  （会报 unrecognized arguments）
 
 # 查看当前状态（Clash 版本 + 各代理组当前选中节点）
-python3 scripts/clash_ctl.py --api http://192.168.1.2:9098 status
+python3 scripts/clash_ctl.py --api http://192.168.1.15:9098 status
 
 # 列出所有可用节点及延迟
-python3 scripts/clash_ctl.py --api http://192.168.1.2:9098 nodes
+python3 scripts/clash_ctl.py --api http://192.168.1.15:9098 nodes
 
 # 列出代理组详情（加 -v 显示每个节点的延迟）
-python3 scripts/clash_ctl.py --api http://192.168.1.2:9098 list -v
+python3 scripts/clash_ctl.py --api http://192.168.1.15:9098 list -v
 ```
 
 ## 环境信息
 
-- **Clash API 地址**：`http://192.168.1.2:9098`（局域网，Clash Verge 运行在 192.168.1.2 上）
+- **Clash API 地址**：`http://192.168.1.15:9098`（局域网，Clash Verge 运行在192.168.1.15 上）
 - **当前版本**：v1.18.7
 - **主要代理组**：SSRDOG（Selector）、GLOBAL（Selector）、Auto（Fallback）
 - **流量信息**：83.5 GB / 300 GB（重置倒计时约 3 天，到期 2027-03-25）
@@ -66,7 +66,7 @@ python3 scripts/clash_ctl.py test-group GLOBAL
 
 | 错误 | 解决 |
 |------|------|
-| 连接失败 | 确认 Clash Verge 正在运行，外部控制地址为 `192.168.1.2:9098` |
+| 连接失败 | 确认 Clash Verge 正在运行，外部控制地址为 `192.168.1.15:9098` |
 | `unrecognized arguments: --api` | `--api` 是全局参数，必须放在子命令**之前**：`python3 clash_ctl.py --api http://... status` |
 | 代理组不存在 | 用 `list -v` 查看实际代理组名称 |
 | 节点匹配不到 | 节点名可能不含国家关键词，传自定义字符串 |

@@ -1,9 +1,9 @@
 ---
-name: pi-pinter
+name: pi-painter
 description: 文字生成图片 skill，调用 aicodewith.com 的 text-to-image API 生成图片。Use when 用户要求生成图片、文生图、根据描述画图、image generation、text to image。支持文生图和图生图两种模式。
 ---
 
-# pi-pinter — 文字生成图片
+# pi-painter — 文字生成图片
 
 通过 aicodewith.com API 将文字描述转换为图片，支持文生图和图生图。
 
@@ -62,7 +62,7 @@ bash "${SKILL_DIR}/scripts/generate.sh" \
   --output "./snow_version.png"
 ```
 
-> 本地图片会通过 `PUT` 请求上传到 `https://pub.adv-ci.com/pi-pinter/`，自动生成带时间戳的唯一文件名。
+> 本地图片会通过 `PUT` 请求上传到 `https://pub.adv-ci.com/pi-painter/`，自动生成带时间戳的唯一文件名。
 
 ## 参数说明
 

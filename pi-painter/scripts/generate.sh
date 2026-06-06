@@ -65,7 +65,7 @@ fi
 
 BASE_URL="https://api.aicodewith.com"
 WEBDAV_BASE="https://pub.adv-ci.com"
-WEBDAV_DIR="pi-pinter"
+WEBDAV_DIR="pi-painter"
 
 # Upload local image to webdav, return public URL
 upload_to_webdav() {

@@ -253,14 +253,13 @@ while true; do
 
         # Download to temp file first to detect compression
         TMP_FILE="${OUT_FILE}.tmp"
-        curl -s -L -o "$TMP_FILE" "$IMG_URL"
+        curl -s -L --max-time 120 -o "$TMP_FILE" "$IMG_URL"
 
         # Detect and decompress gzip if needed
         if file "$TMP_FILE" | grep -q "gzip compressed"; then
           echo "  Detected gzip compression, decompressing..."
-          gunzip -f "$TMP_FILE"
-          # gunzip removes .tmp extension, rename to final name
-          mv "${TMP_FILE%.tmp}" "$OUT_FILE"
+          gzip -d -c "$TMP_FILE" > "$OUT_FILE"
+          rm -f "$TMP_FILE"
         else
           mv "$TMP_FILE" "$OUT_FILE"
         fi

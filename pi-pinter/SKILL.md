@@ -36,7 +36,7 @@ bash "${SKILL_DIR}/scripts/generate.sh" \
   --output "./cat.png"
 ```
 
-### 2. 图生图
+### 2. 图生图（公网 URL）
 
 用户提供原图 URL 作为参考生成新图：
 
@@ -51,6 +51,19 @@ bash "${SKILL_DIR}/scripts/generate.sh" \
   --output "./blue_version.png"
 ```
 
+### 3. 图生图（本地图片）
+
+直接传入本地图片路径，脚本会自动上传到 WebDAV 并获取公网 URL：
+
+```bash
+bash "${SKILL_DIR}/scripts/generate.sh" \
+  --prompt "把背景换成雪景" \
+  --image-url "./my_photo.jpg" \
+  --output "./snow_version.png"
+```
+
+> 本地图片会通过 `PUT` 请求上传到 `https://pub.adv-ci.com/pi-pinter/`，自动生成带时间戳的唯一文件名。
+
 ## 参数说明
 
 | 参数 | 类型 | 必填 | 默认值 | 说明 |
@@ -61,7 +74,7 @@ bash "${SKILL_DIR}/scripts/generate.sh" \
 | `--resolution` | enum | 否 | 1K | 分辨率档位：1K、2K、4K；仅 gpt-image-2 可用 |
 | `--n` | integer | 否 | 1 | 生成数量，范围 1-10；仅 gpt-image-2 支持多张 |
 | `--quality` | string | 否 | medium | 图片质量：high、medium、low；仅 gpt-image-2 支持 |
-| `--image-url` | string | 否 | - | 原图 URL，可传多个 `--image-url` |
+| `--image-url` | string | 否 | - | 原图 URL 或本地文件路径，可传多个。本地文件会自动上传到 WebDAV |
 | `--output` | string | 否 | ./generated.png | 输出文件路径 |
 | `--download` | flag | 否 | - | 是否下载图片到本地（默认下载） |
 

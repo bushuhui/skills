@@ -64,11 +64,79 @@ if [ -z "$API_KEY" ]; then
 fi
 
 BASE_URL="https://api.aicodewith.com"
+WEBDAV_BASE="https://pub.adv-ci.com"
+WEBDAV_DIR="pi-pinter"
+
+# Upload local image to webdav, return public URL
+upload_to_webdav() {
+  local local_file="$1"
+  if [ ! -f "$local_file" ]; then
+    echo "Error: local file not found: $local_file" >&2
+    return 1
+  fi
+
+  local filename
+  filename="$(basename "$local_file")"
+  # Generate unique name to avoid collision
+  local unique_name
+  unique_name="$(date +%s%N)_${filename}"
+  local remote_path="${WEBDAV_DIR}/${unique_name}"
+  local public_url="${WEBDAV_BASE}/${remote_path}"
+
+  # Ensure directory exists
+  curl -s -o /dev/null -X MKCOL "${WEBDAV_BASE}/${WEBDAV_DIR}/"
+
+  # Upload file
+  local http_code
+  http_code=$(curl -s -o /dev/null -w "%{http_code}" -X PUT -T "$local_file" "${WEBDAV_BASE}/${remote_path}")
+
+  if [[ "$http_code" =~ ^2[0-9][0-9]$ ]]; then
+    echo "$public_url"
+    return 0
+  else
+    echo "Error: upload failed with HTTP $http_code" >&2
+    return 1
+  fi
+}
+
+# Process image sources: local files -> upload to webdav, URLs -> pass through
+process_image_sources() {
+  local urls=()
+  for src in "${IMAGE_URLS[@]}"; do
+    if [[ -f "$src" ]]; then
+      # Local file, upload to webdav
+      echo "  Uploading local file: $src" >&2
+      local url
+      url=$(upload_to_webdav "$src")
+      if [ $? -eq 0 ]; then
+        urls+=("$url")
+        echo "  Uploaded to: $url" >&2
+      else
+        return 1
+      fi
+    elif [[ "$src" =~ ^https?:// ]]; then
+      # Already a URL
+      urls+=("$src")
+    else
+      echo "Warning: not a valid URL or local file, skipping: $src" >&2
+    fi
+  done
+  # Output as JSON array
+  if [ ${#urls[@]} -eq 0 ]; then
+    echo "[]"
+  else
+    printf '%s\n' "${urls[@]}" | jq -R . | jq -s .
+  fi
+}
 
 # Build JSON body - gpt-image-2-beta doesn't support quality/resolution
-image_urls_json="[]"
 if [ ${#IMAGE_URLS[@]} -gt 0 ]; then
-  image_urls_json=$(printf '%s\n' "${IMAGE_URLS[@]}" | jq -R . | jq -s .)
+  image_urls_json=$(process_image_sources)
+  if [ $? -ne 0 ]; then
+    exit 1
+  fi
+else
+  image_urls_json="[]"
 fi
 
 if [[ "$MODEL" == *"beta"* ]]; then
